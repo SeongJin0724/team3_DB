@@ -73,6 +73,45 @@ app.post("/api/signup", async (req, res) => {
   }
 });
 
+// 로그인 API
+app.post("/api/login", async (req, res) => {
+  const { email, password } = req.body;
+
+  const sql = "SELECT * FROM user WHERE email = ?";
+  db.query(sql, [email], async (err, result) => {
+    if (err) {
+      // 데이터베이스 쿼리 에러 처리
+      console.error(err);
+      return res.status(500).send({ message: "An error occurred" });
+    }
+
+    // MariaDB/MySQL 쿼리 결과가 배열인 경우 직접 접근, 다른 경우 라이브러리 문서 참조
+    const users = Array.isArray(result) ? result : result[0];
+
+    if (users.length > 0) {
+      try {
+        const comparison = await bcrypt.compare(password, users[0].password);
+        if (comparison) {
+          res.send({ message: "Logged in successfully!" });
+          // 로그인 성공 시 추가 로직
+        } else {
+          // 패스워드 불일치 시
+          res.status(401).send({ message: "Invalid email or password" });
+        }
+      } catch (bcryptError) {
+        // bcrypt 에러 처리
+        console.error(bcryptError);
+        res
+          .status(500)
+          .send({ message: "An error occurred during password verification" });
+      }
+    } else {
+      // 사용자를 찾을 수 없는 경우에도 동일한 메시지 사용
+      res.status(401).send({ message: "Invalid email or password" });
+    }
+  });
+});
+
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));
