@@ -12,8 +12,8 @@ var indexRouter = require("./routes/index");
 // var usersRouter = require('./routes/users');
 
 var app = express();
-let mariadb = require("mariadb");
-const db = mariadb.createPool({
+const mysql = require("mysql2/promise");
+const db = mysql.createPool({
   host: process.env.DB_HOST,
   port: process.env.DB_PORT,
   user: process.env.DB_USER,
@@ -69,36 +69,28 @@ app.post("/api/signup", async (req, res) => {
   }
 });
 
-// 로그인 API
+// 로그인 API (Promise 기반으로 수정)
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
 
   const sql = "SELECT * FROM user WHERE email = ?";
-  db.query(sql, [email], async (err, result) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).send({ message: "An error occurred" });
-    }
-    const users = Array.isArray(result) ? result : result[0];
+  try {
+    const [users, _] = await db.query(sql, [email]); // 배열 구조 분해를 사용하여 첫 번째 원소(결과)를 가져옴
 
     if (users.length > 0) {
-      try {
-        const comparison = await bcrypt.compare(password, users[0].password);
-        if (comparison) {
-          res.send({ message: "Logged in successfully!" });
-        } else {
-          res.status(401).send({ message: "Invalid email or password" });
-        }
-      } catch (bcryptError) {
-        console.error(bcryptError);
-        res
-          .status(500)
-          .send({ message: "An error occurred during password verification" });
+      const comparison = await bcrypt.compare(password, users[0].password);
+      if (comparison) {
+        res.send({ message: "Logged in successfully!" });
+      } else {
+        res.status(401).send({ message: "Invalid email or password" });
       }
     } else {
       res.status(401).send({ message: "Invalid email or password" });
     }
-  });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ message: "An error occurred" });
+  }
 });
 
 // catch 404 and forward to error handler
