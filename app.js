@@ -93,6 +93,17 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
+// 유저 조회
+app.get("/api/users", async (req, res) => {
+  try {
+    const [data, fields] = await db.query("SELECT * FROM user");
+    res.send(data);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({ message: "An error occurred" });
+  }
+});
+
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));
