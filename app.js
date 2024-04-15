@@ -6,6 +6,7 @@ const cors = require("cors");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 const nunjucks = require("nunjucks");
+const bcrypt = require("bcrypt");
 const PORT = process.env.PORT || 4000;
 var indexRouter = require("./routes/index");
 // var usersRouter = require('./routes/users');
@@ -55,14 +56,21 @@ app.post("/api/signup", async (req, res) => {
 
   const sql =
     "INSERT INTO user (user_id, name, email, password, tel, dateJoined, address) VALUES (?, ?, ?, ?, ?, ?, ?)";
-  db.query(
-    sql,
-    [user_id, name, email, hashedPassword, tel, dateJoined, address],
-    (err, result) => {
-      if (err) throw err;
-      res.send({ message: "User registered successfully!" });
-    }
-  );
+  try {
+    const result = await db.query(sql, [
+      user_id,
+      name,
+      email,
+      hashedPassword,
+      tel,
+      dateJoined,
+      address,
+    ]);
+    res.send({ message: "User registered successfully!" });
+  } catch (err) {
+    console.error(err.message);
+    res.status(500).send({ message: "Server error" });
+  }
 });
 
 // catch 404 and forward to error handler
