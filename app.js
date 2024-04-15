@@ -6,7 +6,7 @@ const cors = require("cors");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 const nunjucks = require("nunjucks");
-const PORT = process.env.PORT || 4000;
+const PORT = 4000;
 var indexRouter = require("./routes/index");
 // var usersRouter = require('./routes/users');
 
