@@ -6,7 +6,7 @@ const cors = require("cors");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
 const nunjucks = require("nunjucks");
-const PORT = 4000;
+const PORT = process.env.PORT || 4000;
 var indexRouter = require("./routes/index");
 // var usersRouter = require('./routes/users');
 
@@ -49,21 +49,25 @@ app.listen(PORT, () => {
 });
 
 // 회원가입 API
-app.post("/api/signup", async (req, res) => {
-  const { user_id, name, email, password, tel, dateJoined, address } = req.body;
-  const hashedPassword = await bcrypt.hash(password, 8);
+app.post(
+  "/https://port-0-team3-db-2aat2clv0a803z.sel5.cloudtype.app/api/signup",
+  async (req, res) => {
+    const { user_id, name, email, password, tel, dateJoined, address } =
+      req.body;
+    const hashedPassword = await bcrypt.hash(password, 8);
 
-  const sql =
-    "INSERT INTO user (user_id, name, email, password, tel, dateJoined, address) VALUES (?, ?, ?, ?, ?, ?, ?)";
-  db.query(
-    sql,
-    [user_id, name, email, hashedPassword, tel, dateJoined, address],
-    (err, result) => {
-      if (err) throw err;
-      res.send({ message: "User registered successfully!" });
-    }
-  );
-});
+    const sql =
+      "INSERT INTO user (user_id, name, email, password, tel, dateJoined, address) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    db.query(
+      sql,
+      [user_id, name, email, hashedPassword, tel, dateJoined, address],
+      (err, result) => {
+        if (err) throw err;
+        res.send({ message: "User registered successfully!" });
+      }
+    );
+  }
+);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
