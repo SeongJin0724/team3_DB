@@ -50,7 +50,7 @@ app.listen(PORT, () => {
 
 // 회원가입 API
 app.post(
-  "/https://port-0-team3-db-2aat2clv0a803z.sel5.cloudtype.app/api/signup",
+  "https://port-0-team3-db-2aat2clv0a803z.sel5.cloudtype.app/api/signup",
   async (req, res) => {
     const { user_id, name, email, password, tel, dateJoined, address } =
       req.body;
