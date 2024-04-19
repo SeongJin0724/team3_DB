@@ -100,7 +100,7 @@ app.get("/api/users", async (req, res) => {
 });
 
 // 검색
-app.get("/api/searchres", (req, res) => {
+app.get("/api/search", (req, res) => {
   const searchTerm = req.query.term;
 
   if (!searchTerm) {
