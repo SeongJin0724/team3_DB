@@ -63,7 +63,7 @@ app.post("/api/send-verification-code", (req, res) => {
     VALUES (?, ?, ?)
     ON DUPLICATE KEY UPDATE verification_code = ?, code_expires_at = ?;
   `;
-  pool.query(
+  db.query(
     insertOrUpdateQuery,
     [email, verificationCode, codeExpires, verificationCode, codeExpires],
     (error, results) => {
@@ -95,14 +95,14 @@ app.post("/api/verify", (req, res) => {
   const query =
     "SELECT * FROM user WHERE email = ? AND verification_code = ? AND code_expires_at > NOW()";
 
-  pool.query(query, [email, verificationCode], (error, results) => {
+  db.query(query, [email, verificationCode], (error, results) => {
     if (error || results.length === 0) {
       return res.status(400).send("Invalid or expired code");
     }
 
     // 인증 성공시 verified 상태를 1로 업데이트
     const updateQuery = "UPDATE user SET verified = 1 WHERE email = ?";
-    pool.query(updateQuery, [email], (error, results) => {
+    db.query(updateQuery, [email], (error, results) => {
       if (error) {
         return res.status(500).send("Server error");
       }
@@ -126,7 +126,7 @@ app.post("/api/signup", (req, res) => {
 
   // 먼저 사용자가 이메일을 인증했는지 확인
   const verifiedQuery = "SELECT verified FROM user WHERE email = ?";
-  pool.query(verifiedQuery, [email], (error, results) => {
+  db.query(verifiedQuery, [email], (error, results) => {
     if (error) {
       return res.status(500).send("Server error");
     }
@@ -138,7 +138,7 @@ app.post("/api/signup", (req, res) => {
     const query =
       "INSERT INTO user (email, password, name, tel, address, bankName, accountNum, accountOwner, verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)";
 
-    pool.query(
+    db.query(
       query,
       [email, password, name, tel, address, bankName, accountNum, accountOwner],
       (error, results) => {
