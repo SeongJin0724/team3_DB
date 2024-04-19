@@ -107,21 +107,19 @@ app.get("/api/users", async (req, res) => {
 
 // 검색
 app.get("/searchres", (req, res) => {
-  const { term } = req.query;
+  const searchTerm = req.query.term;
 
   if (!term) {
     return res.status(400).send({ error: "검색어를 입력해주세요." });
   }
+  let query = `SELECT * FROM item 
+  WHERE title LIKE '%${searchTerm}%' OR
+   category LIKE '%${searchTerm}%' OR
+   subCategory LIKE '%${searchTerm}%' OR 
+  brand LIKE '%${searchTerm}%'`;
 
-  const query =
-    "SELECT * FROM item WHERE title LIKE ? OR category LIKE ? OR subCategory LIKE ? OR brand LIKE ?";
-  const values = [`%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`];
-
-  db.query(query, values, (err, results) => {
-    if (err) {
-      console.error(err);
-      return res.status(500).send({ error: "서버 내부 오류가 발생했습니다." });
-    }
+  db.query(query, (err, results) => {
+    if (err) throw err;
     res.json(results);
   });
 });
