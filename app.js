@@ -49,37 +49,6 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/", indexRouter);
 // app.use('/users', usersRouter);
 
-// 회원가입 API
-app.post("/api/signup", (req, res) => {
-  const {
-    email,
-    password,
-    name,
-    tel,
-    address,
-    bankName,
-    accountNum,
-    accountOwner,
-  } = req.body;
-
-  // 사용자 정보를 데이터베이스에 저장하는 쿼리
-  const query =
-    "INSERT INTO user (email, password, name, tel, address, bankName, accountNum, accountOwner, verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)";
-
-  pool.query(
-    query,
-    [email, password, name, tel, address, bankName, accountNum, accountOwner],
-    (error, results) => {
-      if (error) {
-        return res.status(500).send("Server error");
-      }
-      res
-        .status(200)
-        .send("User registered successfully, please verify your email.");
-    }
-  );
-});
-
 // 인증 코드 발송 API
 app.post("/api/send-verification-code", (req, res) => {
   const { email } = req.body;
@@ -87,12 +56,16 @@ app.post("/api/send-verification-code", (req, res) => {
   const codeExpires = new Date(); // 코드 만료 시간 설정
   codeExpires.setMinutes(codeExpires.getMinutes() + 10); // 10분 후 만료
 
-  // 기존 코드를 무효화하고 새 코드를 저장하는 로직 추가
-  const updateQuery =
-    "UPDATE user SET verification_code = ?, code_expires_at = ? WHERE email = ?";
+  // 새 인증 코드를 저장하는 로직 추가
+  // 이메일이 데이터베이스에 없으면 새로운 사용자로 추가
+  const insertOrUpdateQuery = `
+    INSERT INTO user (email, verification_code, code_expires_at)
+    VALUES (?, ?, ?)
+    ON DUPLICATE KEY UPDATE verification_code = ?, code_expires_at = ?;
+  `;
   pool.query(
-    updateQuery,
-    [verificationCode, codeExpires, email],
+    insertOrUpdateQuery,
+    [email, verificationCode, codeExpires, verificationCode, codeExpires],
     (error, results) => {
       if (error) {
         return res.status(500).send("Server error");
@@ -135,6 +108,46 @@ app.post("/api/verify", (req, res) => {
       }
       res.status(200).send("Account verified successfully.");
     });
+  });
+});
+
+// 회원가입 API
+app.post("/api/signup", (req, res) => {
+  const {
+    email,
+    password,
+    name,
+    tel,
+    address,
+    bankName,
+    accountNum,
+    accountOwner,
+  } = req.body;
+
+  // 먼저 사용자가 이메일을 인증했는지 확인
+  const verifiedQuery = "SELECT verified FROM user WHERE email = ?";
+  pool.query(verifiedQuery, [email], (error, results) => {
+    if (error) {
+      return res.status(500).send("Server error");
+    }
+    if (results.length === 0 || results[0].verified === 0) {
+      return res.status(400).send("Email not verified");
+    }
+
+    // 사용자 정보를 데이터베이스에 저장하는 쿼리
+    const query =
+      "INSERT INTO user (email, password, name, tel, address, bankName, accountNum, accountOwner, verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)";
+
+    pool.query(
+      query,
+      [email, password, name, tel, address, bankName, accountNum, accountOwner],
+      (error, results) => {
+        if (error) {
+          return res.status(500).send("Server error");
+        }
+        res.status(200).send("User registered successfully.");
+      }
+    );
   });
 });
 
