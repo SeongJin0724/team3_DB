@@ -113,10 +113,11 @@ app.get("/searchres", (req, res) => {
     return res.status(400).send({ error: "검색어를 입력해주세요." });
   }
 
-  const query = "SELECT * FROM item";
-  // const values = [`%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`];
+  const query =
+    "SELECT * FROM item WHERE title LIKE ? OR category LIKE ? OR subCategory LIKE ? OR brand LIKE ?";
+  const values = [`%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`];
 
-  db.query(query, (err, results) => {
+  db.query(query, values, (err, results) => {
     if (err) {
       console.error(err);
       return res.status(500).send({ error: "서버 내부 오류가 발생했습니다." });
