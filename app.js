@@ -50,43 +50,47 @@ app.use("/", indexRouter);
 // app.use('/users', usersRouter);
 
 // 인증 코드 발송 API
-app.post("/api/send-verification-code", (req, res) => {
+app.post("/api/send-verification-code", async (req, res) => {
   const { email } = req.body;
-  const verificationCode = Math.floor(100000 + Math.random() * 900000); // 6자리 인증 코드 생성
-  const codeExpires = new Date(); // 코드 만료 시간 설정
+  const verificationCode = Math.floor(
+    100000 + Math.random() * 900000
+  ).toString(); // 6자리 인증 코드 생성
+  const codeExpires = new Date();
   codeExpires.setMinutes(codeExpires.getMinutes() + 10); // 10분 후 만료
 
-  // 새 인증 코드를 저장하는 로직 추가
-  // 이메일이 데이터베이스에 없으면 새로운 사용자로 추가
-  const insertOrUpdateQuery = `
-    INSERT INTO user (email, verification_code, code_expires_at)
-    VALUES (?, ?, ?)
-    ON DUPLICATE KEY UPDATE verification_code = ?, code_expires_at = ?;
-  `;
-  db.query(
-    insertOrUpdateQuery,
-    [email, verificationCode, codeExpires, verificationCode, codeExpires],
-    (error, results) => {
+  try {
+    const conn = await pool.getConnection();
+    const insertOrUpdateQuery = `
+          INSERT INTO user (email, verification_code, code_expires_at)
+          VALUES (?, ?, ?)
+          ON DUPLICATE KEY UPDATE verification_code = ?, code_expires_at = ?;
+      `;
+    await conn.query(insertOrUpdateQuery, [
+      email,
+      verificationCode,
+      codeExpires,
+      verificationCode,
+      codeExpires,
+    ]);
+    conn.end();
+
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: "회원가입 인증 코드",
+      html: `<p>귀하의 인증 코드는 ${verificationCode}입니다.</p>`,
+    };
+
+    transporter.sendMail(mailOptions, (error, info) => {
       if (error) {
-        return res.status(500).send("Server error");
+        return res.status(500).send("Email send error");
       }
-
-      // 이메일로 인증 코드 발송
-      const mailOptions = {
-        from: process.env.EMAIL_USERNAME,
-        to: email,
-        subject: "회원가입 인증 코드",
-        html: `<p>귀하의 인증 코드는 ${verificationCode} 입니다.</p>`,
-      };
-
-      transporter.sendMail(mailOptions, (error, info) => {
-        if (error) {
-          return res.status(500).send("Email send error");
-        }
-        res.status(200).send("Verification code sent");
-      });
-    }
-  );
+      res.status(200).send("Verification code sent");
+    });
+  } catch (error) {
+    console.error("Error sending email code:", error);
+    res.status(500).send("Failed to send email code");
+  }
 });
 
 // 인증 코드 확인 API
