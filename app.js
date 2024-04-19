@@ -100,23 +100,35 @@ app.get("/api/users", async (req, res) => {
 });
 
 // 검색
-app.get("/searchres", (req, res) => {
-  const searchTerm = req.query.term;
 
+app.get("/api//searchres", async (req, res) => {
+  const searchTerm = req.query.term;
   if (!searchTerm) {
     return res.status(400).send({ error: "검색어를 입력해주세요." });
   }
-  let query = `SELECT * FROM item 
-  WHERE title LIKE '%${searchTerm}%' OR
-   category LIKE '%${searchTerm}%' OR
-   subCategory LIKE '%${searchTerm}%' OR 
-  brand LIKE '%${searchTerm}%'`;
-
-  db.query(query, (err, results) => {
+  try {
+    const [data, fields] = await db.query("SELECT * FROM user");
     if (err) throw err;
-    res.json(results);
-  });
+    res.json(data);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({ message: "An error occurred" });
+  }
 });
+
+// app.get("/searchres", (req, res) => {
+//   const searchTerm = req.query.term;
+
+//   if (!searchTerm) {
+//     return res.status(400).send({ error: "검색어를 입력해주세요." });
+//   }
+//   let query = `SELECT * FROM item`;
+
+//   db.query(query, (err, results) => {
+//     if (err) throw err;
+//     res.json(results);
+//   });
+// });
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
