@@ -13,6 +13,7 @@ var indexRouter = require("./routes/index");
 
 var app = express();
 const mysql = require("mysql2/promise");
+const { log } = require("console");
 const db = mysql.createPool({
   host: process.env.DB_HOST,
   port: process.env.DB_PORT,
@@ -102,6 +103,27 @@ app.get("/api/users", async (req, res) => {
     console.log(err);
     res.status(500).send({ message: "An error occurred" });
   }
+});
+
+// 검색
+app.get("/searchres", (req, res) => {
+  const { term } = req.query;
+
+  if (!term) {
+    return res.status(400).send({ error: "검색어를 입력해주세요." });
+  }
+
+  const query =
+    "SELECT * FROM item WHERE title LIKE ? OR category LIKE ? OR subCategory LIKE ? OR brand LIKE ?";
+  const values = [`%${term}%`, `%${term}%`, `%${term}%`, `%${term}%`];
+
+  db.query(query, values, (err, results) => {
+    if (err) {
+      console.error(err);
+      return res.status(500).send({ error: "서버 내부 오류가 발생했습니다." });
+    }
+    res.json(results);
+  });
 });
 
 // catch 404 and forward to error handler
