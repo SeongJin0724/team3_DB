@@ -5,6 +5,7 @@ var path = require("path");
 const cors = require("cors");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
+const nodemailer = require("nodemailer");
 const nunjucks = require("nunjucks");
 const bcrypt = require("bcrypt");
 const PORT = process.env.PORT || 4000;
@@ -13,7 +14,7 @@ var indexRouter = require("./routes/index");
 
 var app = express();
 const mysql = require("mysql2/promise");
-const { log } = require("console");
+
 const db = mysql.createPool({
   host: process.env.DB_HOST,
   port: process.env.DB_PORT,
@@ -21,6 +22,29 @@ const db = mysql.createPool({
   password: process.env.DB_PASSWORD,
   database: process.env.DB_DATABASE,
 });
+
+const transporter = nodemailer.createTransport({
+  service: process.env.EMAIL_SERVICE,
+  auth: {
+    user: process.env.EMAIL_USERNAME,
+    pass: process.env.EMAIL_PASSWORD,
+  },
+});
+
+const sendVerificationEmail = async (email, verificationCode) => {
+  const mailOptions = {
+    from: process.env.EMAIL_USERNAME,
+    to: email,
+    subject: "회원가입 인증",
+    text: `인증 코드: ${verificationCode}`,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+  } catch (error) {
+    console.error("이메일 전송 실패:", error);
+  }
+};
 
 app.use(cors());
 // view engine setup
@@ -42,25 +66,59 @@ app.use("/", indexRouter);
 
 // 회원가입 API
 app.post("/api/signup", async (req, res) => {
-  const { user_id, name, email, password, tel, dateJoined, address } = req.body;
-  const hashedPassword = await bcrypt.hash(password, 8);
+  const { email, password } = req.body;
+  const hashedPassword = bcrypt.hashSync(password, 8);
+  const verificationCode = Math.floor(
+    100000 + Math.random() * 900000
+  ).toString(); // 6자리 인증 코드 생성
 
-  const sql =
-    "INSERT INTO user (user_id, name, email, password, tel, dateJoined, address) VALUES (?, ?, ?, ?, ?, ?, ?)";
   try {
-    const result = await db.query(sql, [
-      user_id,
-      name,
-      email,
-      hashedPassword,
-      tel,
-      dateJoined,
-      address,
-    ]);
-    res.send({ message: "User registered successfully!" });
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send({ message: "Server error" });
+    const conn = await pool.getConnection();
+    await conn.query(
+      "INSERT INTO user(email, password, verification_code, verification_expires) VALUES (?, ?, ?, ADDDATE(NOW(), INTERVAL 1 DAY))",
+      [email, hashedPassword, verificationCode]
+    );
+    await conn.end();
+
+    sendVerificationEmail(email, verificationCode);
+
+    res.status(200).send("회원가입 성공. 인증 코드가 이메일로 발송되었습니다.");
+  } catch (error) {
+    res.status(500).send("서버 에러");
+  }
+});
+// 이메일 인증 API
+app.post("/api/verify-email", async (req, res) => {
+  const { email, verificationCode } = req.body;
+
+  try {
+    // 데이터베이스에서 사용자 검색
+    const userQuery = "SELECT * FROM user WHERE email = ?";
+    const user = await db.query(userQuery, [email]);
+
+    if (user.length > 0) {
+      // 인증 코드와 만료 시간 확인
+      if (
+        user[0].verificationCode === verificationCode &&
+        new Date() < new Date(user[0].verificationCodeExpires)
+      ) {
+        // 사용자의 verified 상태 업데이트
+        const updateQuery = "UPDATE users SET verified = 1 WHERE email = ?";
+        await db.query(updateQuery, [email]);
+        res
+          .status(200)
+          .json({ message: "이메일 인증이 성공적으로 완료되었습니다." });
+      } else {
+        res.status(400).json({
+          message: "잘못된 인증 코드이거나 인증 코드가 만료되었습니다.",
+        });
+      }
+    } else {
+      res.status(404).json({ message: "사용자를 찾을 수 없습니다." });
+    }
+  } catch (error) {
+    console.error("이메일 인증 중 오류 발생:", error);
+    res.status(500).json({ message: "서버 오류가 발생했습니다." });
   }
 });
 
