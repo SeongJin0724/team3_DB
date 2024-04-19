@@ -109,7 +109,7 @@ app.get("/api/users", async (req, res) => {
 app.get("/searchres", (req, res) => {
   const searchTerm = req.query.term;
 
-  if (!term) {
+  if (!searchTerm) {
     return res.status(400).send({ error: "검색어를 입력해주세요." });
   }
   let query = `SELECT * FROM item 
