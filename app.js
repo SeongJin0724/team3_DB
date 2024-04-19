@@ -101,7 +101,7 @@ app.get("/api/users", async (req, res) => {
 
 // 검색
 
-app.get("/api/searchres?term=1", async (req, res) => {
+app.get("/api/searchres", async (req, res) => {
   const searchTerm = req.query.term;
   if (!searchTerm) {
     return res.status(400).send({ error: "검색어를 입력해주세요." });
