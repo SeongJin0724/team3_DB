@@ -22,13 +22,7 @@ const db = mysql.createPool({
   database: process.env.DB_DATABASE,
 });
 
-app.use(
-  cors({
-    origin: "*",
-    credentials: true,
-    optionsSuccessStatus: 200,
-  })
-);
+app.use(cors());
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
 app.set("view engine", "njk");
