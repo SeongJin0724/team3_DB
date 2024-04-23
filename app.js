@@ -192,8 +192,7 @@ app.get("/api/users", async (req, res) => {
 
 // 검색
 app.get("/api/search", async (req, res) => {
-  // const searchTerm = req.query.term;
-  const searchTerm = "신발";
+  const searchTerm = req.query.term;
 
   if (!searchTerm) {
     return res.status(400).send({ error: "검색어를 입력해주세요." });
@@ -213,7 +212,7 @@ app.get("/api/search", async (req, res) => {
       likeSearchTerm,
       likeSearchTerm,
     ]);
-    res.send(data);
+    res.json(data);
   } catch (err) {
     console.error("Error:", err);
     res.status(500).send({ error: "서버 에러" });
