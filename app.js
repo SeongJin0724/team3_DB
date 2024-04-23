@@ -192,7 +192,8 @@ app.get("/api/users", async (req, res) => {
 
 // 검색
 app.get("/api/search", async (req, res) => {
-  const searchTerm = req.query.term;
+  // const searchTerm = req.query.term;
+  const searchTerm = "신발";
 
   if (!searchTerm) {
     return res.status(400).send({ error: "검색어를 입력해주세요." });
