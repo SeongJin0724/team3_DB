@@ -200,8 +200,8 @@ app.get("/api/search", async (req, res) => {
 
   let query = `SELECT * FROM item 
   WHERE title LIKE ? OR
-   category LIKE ? OR
-   subCategory LIKE ? OR 
+  category LIKE ? OR
+  subCategory LIKE ? OR 
   brand LIKE ?`;
   const likeSearchTerm = `%${searchTerm}%`;
 
