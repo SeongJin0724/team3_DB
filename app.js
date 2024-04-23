@@ -197,6 +197,7 @@ app.get("/api/search", (req, res) => {
   if (!searchTerm) {
     return res.status(400).send({ error: "검색어를 입력해주세요." });
   }
+
   let query = `SELECT * FROM item 
   WHERE title LIKE '%${searchTerm}%' OR
    category LIKE '%${searchTerm}%' OR
@@ -205,7 +206,10 @@ app.get("/api/search", (req, res) => {
 
   db.query(query, (err, results) => {
     if (err) throw err;
-    res.json(results);
+    // res.json(results);
+    res.writeHead("200", { "Content-Type": "application/json; charset=utf8" });
+    res.write(JSON.stringify(results));
+    res.end();
   });
 });
 
