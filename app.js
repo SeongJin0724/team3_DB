@@ -182,7 +182,7 @@ app.post("/api/login", async (req, res) => {
 // 유저 조회
 app.get("/api/users", async (req, res) => {
   try {
-    const [data, fields] = await db.query("SELECT * FROM user");
+    const [data, fields] = await db.query("SELECT * FROM 123");
     res.send(data);
   } catch (err) {
     console.log(err);
