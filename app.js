@@ -59,7 +59,7 @@ app.post("/api/send-verification-code", async (req, res) => {
   codeExpires.setMinutes(codeExpires.getMinutes() + 10); // 10분 후 만료
 
   try {
-    const conn = await pool.getConnection();
+    const conn = await db.getConnection();
     const insertOrUpdateQuery = `
           INSERT INTO user (email, verification_code, code_expires_at)
           VALUES (?, ?, ?)
@@ -72,7 +72,7 @@ app.post("/api/send-verification-code", async (req, res) => {
       verificationCode,
       codeExpires,
     ]);
-    conn.end();
+    await conn.release();
 
     const mailOptions = {
       from: process.env.EMAIL_USER,
