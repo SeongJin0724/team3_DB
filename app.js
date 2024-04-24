@@ -207,17 +207,18 @@ app.get("/api/search", async (req, res) => {
 });
 
 // 브랜드
-app.get("/api/brands/:brand", (req, res) => {
+app.get("/api/brands/:brand", async (req, res) => {
   const brand = req.params.brand;
-  db.query("SELECT * FROM item WHERE brand = ?", [brand], (err, results) => {
-    if (err) {
-      console.error("데이터베이스 쿼리 중 오류 발생:", err);
-      return res
-        .status(500)
-        .json({ message: "서버 내부 오류가 발생했습니다." });
-    }
+
+  try {
+    const results = await db.query("SELECT * FROM item WHERE brand = ?", [
+      brand,
+    ]);
     res.json(results);
-  });
+  } catch (err) {
+    console.error("데이터베이스 쿼리 중 오류 발생:", err);
+    res.status(500).json({ message: "서버 내부 오류가 발생했습니다." });
+  }
 });
 
 // catch 404 and forward to error handler
