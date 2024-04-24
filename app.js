@@ -198,7 +198,7 @@ app.get("/api/search", async (req, res) => {
     return res.status(400).send({ error: "검색어를 입력해주세요." });
   }
 
-  let query = `SELECT * FROM item 
+  let query = `SELECT * FROM user 
   WHERE title LIKE ? OR
   category LIKE ? OR
   subCategory LIKE ? OR 
