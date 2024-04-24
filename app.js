@@ -52,27 +52,14 @@ app.use("/", indexRouter);
 // 인증 코드 발송 API
 app.post("/api/send-verification-code", async (req, res) => {
   const { email } = req.body;
-  const verificationCode = Math.floor(
-    100000 + Math.random() * 900000
-  ).toString(); // 6자리 인증 코드 생성
+  const verificationCode = Math.floor(1000 + Math.random() * 9000).toString(); // 4자리 인증 코드 생성
   const codeExpires = new Date();
-  codeExpires.setMinutes(codeExpires.getMinutes() + 10); // 10분 후 만료
+  codeExpires.setMinutes(codeExpires.getMinutes() + 3); // 3분 후 만료
 
   try {
-    const conn = await db.getConnection();
-    const insertOrUpdateQuery = `
-          INSERT INTO user (email, verification_code, code_expires_at)
-          VALUES (?, ?, ?)
-          ON DUPLICATE KEY UPDATE verification_code = ?, code_expires_at = ?;
-      `;
-    await conn.query(insertOrUpdateQuery, [
-      email,
-      verificationCode,
-      codeExpires,
-      verificationCode,
-      codeExpires,
-    ]);
-    await conn.release();
+    // 인증 코드와 만료 시간을 임시 저장소에 저장하는 로직을 추가할 수 있음
+    // 예: Redis, Memcached 등을 사용하여 email을 키로 하여 verificationCode와 codeExpires를 저장
+    // 여기서는 데이터베이스 사용 로직을 제거합니다.
 
     const mailOptions = {
       from: process.env.EMAIL_USER,
