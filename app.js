@@ -206,6 +206,15 @@ app.get("/api/search", async (req, res) => {
   }
 });
 
+// 브랜드
+app.get("/api/products/:brand", (req, res) => {
+  const brand = req.params.brand;
+  db.query("SELECT * FROM item WHERE brand = ?", [brand], (err, results) => {
+    if (err) throw err;
+    res.json(results);
+  });
+});
+
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));
