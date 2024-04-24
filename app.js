@@ -182,7 +182,7 @@ app.post("/api/login", async (req, res) => {
 // 유저 조회
 app.get("/api/users", async (req, res) => {
   try {
-    const [data, fields] = await db.query("SELECT * FROM 123");
+    const [data, fields] = await db.query("SELECT * FROM user");
     res.send(data);
   } catch (err) {
     console.log(err);
@@ -198,7 +198,7 @@ app.get("/api/search", async (req, res) => {
     return res.status(400).send({ error: "검색어를 입력해주세요." });
   }
 
-  let query = `SELECT * FROM user 
+  let query = `SELECT * FROM item 
   WHERE title LIKE ? OR
   category LIKE ? OR
   subCategory LIKE ? OR 
