@@ -59,7 +59,7 @@ app.post("/api/send-verification-code", async (req, res) => {
   codeExpires.setMinutes(codeExpires.getMinutes() + 10); // 10분 후 만료
 
   try {
-d    const conn = await db.getConnection();
+    const conn = await db.getConnection();
     const insertOrUpdateQuery = `
           INSERT INTO user (email, verification_code, code_expires_at)
           VALUES (?, ?, ?)
