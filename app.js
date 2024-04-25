@@ -221,6 +221,20 @@ app.get("/api/brands/:brand", async (req, res) => {
   }
 });
 
+// 신규 판매 상품
+app.get("/api/newin", (req, res) => {
+  let limit = 5;
+  let offset = parseInt(req.query.offset) || 0;
+  db.query(
+    "SELECT * FROM item ORDER BY releaseDate DESC LIMIT ?, ?",
+    [offset, limit],
+    (error, results) => {
+      if (error) throw error;
+      res.json(results);
+    }
+  );
+});
+
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));
