@@ -49,45 +49,45 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/", indexRouter);
 // app.use('/users', usersRouter);
 
-app.post("/api/send-verification-code", async (req, res) => {
-  const { email } = req.body;
-  const verificationCode = Math.floor(1000 + Math.random() * 9000).toString(); // 4자리 인증 코드 생성
-  const codeExpires = new Date();
-  codeExpires.setMinutes(codeExpires.getMinutes() + 3); // 3분 후 만료
+// app.post("/api/send-verification-code", async (req, res) => {
+//   const { email } = req.body;
+//   const verificationCode = Math.floor(1000 + Math.random() * 9000).toString(); // 4자리 인증 코드 생성
+//   const codeExpires = new Date();
+//   codeExpires.setMinutes(codeExpires.getMinutes() + 3); // 3분 후 만료
 
-  try {
-    // 인증 코드와 만료 시간을 데이터베이스에 저장
-    const insertQuery =
-      "INSERT INTO user (email, verification_code, code_expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE verification_code = ?, code_expires_at = ?";
-    db.query(
-      insertQuery,
-      [email, verificationCode, codeExpires, verificationCode, codeExpires],
-      (error, results) => {
-        if (error) {
-          console.error("Error inserting verification code:", error);
-          return res.status(500).send("Failed to store verification code");
-        }
+//   try {
+//     // 인증 코드와 만료 시간을 데이터베이스에 저장
+//     const insertQuery =
+//       "INSERT INTO user (email, verification_code, code_expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE verification_code = ?, code_expires_at = ?";
+//     db.query(
+//       insertQuery,
+//       [email, verificationCode, codeExpires, verificationCode, codeExpires],
+//       (error, results) => {
+//         if (error) {
+//           console.error("Error inserting verification code:", error);
+//           return res.status(500).send("Failed to store verification code");
+//         }
 
-        const mailOptions = {
-          from: process.env.EMAIL_USER,
-          to: email,
-          subject: "회원가입 인증 코드",
-          html: `<p>귀하의 인증 코드는 ${verificationCode}입니다.</p>`,
-        };
+//         const mailOptions = {
+//           from: process.env.EMAIL_USER,
+//           to: email,
+//           subject: "회원가입 인증 코드",
+//           html: `<p>귀하의 인증 코드는 ${verificationCode}입니다.</p>`,
+//         };
 
-        transporter.sendMail(mailOptions, (error, info) => {
-          if (error) {
-            return res.status(500).send("Email send error");
-          }
-          res.status(200).send("Verification code sent");
-        });
-      }
-    );
-  } catch (error) {
-    console.error("Error sending email code:", error);
-    res.status(500).send("Failed to send email code");
-  }
-});
+//         transporter.sendMail(mailOptions, (error, info) => {
+//           if (error) {
+//             return res.status(500).send("Email send error");
+//           }
+//           res.status(200).send("Verification code sent");
+//         });
+//       }
+//     );
+//   } catch (error) {
+//     console.error("Error sending email code:", error);
+//     res.status(500).send("Failed to send email code");
+//   }
+// });
 
 // 인증 코드 확인 API
 app.post("/api/verify", (req, res) => {
