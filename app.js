@@ -49,7 +49,6 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/", indexRouter);
 // app.use('/users', usersRouter);
 
-// 인증 코드 발송 API
 app.post("/api/send-verification-code", async (req, res) => {
   const { email } = req.body;
   const verificationCode = Math.floor(1000 + Math.random() * 9000).toString(); // 4자리 인증 코드 생성
@@ -57,23 +56,33 @@ app.post("/api/send-verification-code", async (req, res) => {
   codeExpires.setMinutes(codeExpires.getMinutes() + 3); // 3분 후 만료
 
   try {
-    // 인증 코드와 만료 시간을 임시 저장소에 저장하는 로직을 추가할 수 있음
-    // 예: Redis, Memcached 등을 사용하여 email을 키로 하여 verificationCode와 codeExpires를 저장
-    // 여기서는 데이터베이스 사용 로직을 제거합니다.
+    // 인증 코드와 만료 시간을 데이터베이스에 저장
+    const insertQuery =
+      "INSERT INTO user (email, verification_code, code_expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE verification_code = ?, code_expires_at = ?";
+    db.query(
+      insertQuery,
+      [email, verificationCode, codeExpires, verificationCode, codeExpires],
+      (error, results) => {
+        if (error) {
+          console.error("Error inserting verification code:", error);
+          return res.status(500).send("Failed to store verification code");
+        }
 
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: "회원가입 인증 코드",
-      html: `<p>귀하의 인증 코드는 ${verificationCode}입니다.</p>`,
-    };
+        const mailOptions = {
+          from: process.env.EMAIL_USER,
+          to: email,
+          subject: "회원가입 인증 코드",
+          html: `<p>귀하의 인증 코드는 ${verificationCode}입니다.</p>`,
+        };
 
-    transporter.sendMail(mailOptions, (error, info) => {
-      if (error) {
-        return res.status(500).send("Email send error");
+        transporter.sendMail(mailOptions, (error, info) => {
+          if (error) {
+            return res.status(500).send("Email send error");
+          }
+          res.status(200).send("Verification code sent");
+        });
       }
-      res.status(200).send("Verification code sent");
-    });
+    );
   } catch (error) {
     console.error("Error sending email code:", error);
     res.status(500).send("Failed to send email code");
