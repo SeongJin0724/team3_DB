@@ -231,17 +231,19 @@ app.get("/api/brands/:brand", async (req, res) => {
 });
 
 // 신규 판매 상품
-app.get("/api/newin", (req, res) => {
+app.get("/api/newin", async (req, res) => {
   let limit = 5;
   let offset = parseInt(req.query.offset) || 0;
-  db.query(
-    "SELECT * FROM item ORDER BY releaseDate DESC LIMIT ?, ?",
-    [offset, limit],
-    (error, results) => {
-      if (error) throw error;
-      res.json(results);
-    }
-  );
+  try {
+    const data = await db.query(
+      "SELECT * FROM item ORDER BY releaseDate DESC LIMIT ?, ?",
+      [offset, limit]
+    );
+    res.json(data);
+  } catch (err) {
+    console.error("Error:", err);
+    res.status(500).send({ error: "서버 에러" });
+  }
 });
 
 // catch 404 and forward to error handler
