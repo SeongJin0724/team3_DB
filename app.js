@@ -65,17 +65,32 @@ app.use("/", indexRouter);
 // app.use('/users', usersRouter);
 
 // 임시 저장소
-let tempStorage = {};
 
-// 이메일 인증 코드 전송
 app.post("/send-verification-code", async (req, res) => {
   const { email } = req.body;
-  const verificationCode = Math.floor(1000 + Math.random() * 900000); // 6자리 숫자 코드 생성
+  const verificationCode = Math.floor(1000 + Math.random() * 9000); // 4자리 숫자 코드 생성
   const codeExpires = new Date().getTime() + 3 * 60 * 1000; // 3분 후 만료
 
-  tempStorage[email] = { verificationCode, codeExpires };
+  // 먼저 사용자의 이메일이 이미 존재하는지 확인
+  const existingUser = await db.query(
+    `SELECT user_id FROM users WHERE email = ?`,
+    [email]
+  );
+  if (existingUser.length > 0) {
+    // 이미 존재하는 이메일이면, 기존 코드를 업데이트
+    await db.query(
+      `UPDATE user SET verification_code = ?, code_expires_at = ? WHERE email = ?`,
+      [verificationCode, codeExpires, email]
+    );
+  } else {
+    // 새 이메일이면, 새로운 레코드 생성
+    await db.query(
+      `INSERT INTO user (email, verification_code, code_expires_at) VALUES (?, ?, ?)`,
+      [email, verificationCode, codeExpires]
+    );
+  }
 
-  // 이메일 전송
+  // 이메일 전송 로직
   await transporter.sendMail({
     from: process.env.EMAIL_USERNAME,
     to: email,
@@ -85,43 +100,53 @@ app.post("/send-verification-code", async (req, res) => {
 
   res.send("Verification code sent.");
 });
-// 이메일 인증 코드 검증
-app.post("/verify-email", async (req, res) => {
-  const { email, verificationCode } = req.body;
-  const { verificationCode: storedCode, codeExpires } =
-    tempStorage[email] || {};
 
-  if (!storedCode || !codeExpires || new Date().getTime() > codeExpires) {
+//이메일 코드 검증
+app.post("/verify-code", async (req, res) => {
+  const { email, verificationCode } = req.body;
+  // 사용자의 이메일과 인증 코드로 검증
+  const user = await db.query(
+    `SELECT user_id FROM user WHERE email = ? AND verification_code = ? AND code_expires_at > ?`,
+    [email, verificationCode, new Date().getTime()]
+  );
+
+  if (user.length === 0) {
     return res.status(400).send("Invalid or expired verification code.");
   }
 
-  if (verificationCode !== storedCode.toString()) {
-    return res.status(400).send("Incorrect verification code.");
-  }
-
-  // 이메일 인증 상태를 데이터베이스에 저장
-  await db.query("UPDATE user SET email_verified = true WHERE email = $1", [
-    email,
+  // 이메일이 검증된 것으로 표시 (예: 이메일 인증 상태 업데이트)
+  // 실제 구현에서는 이메일 인증 상태를 나타내는 별도의 필드가 필요할 수 있습니다.
+  await db.query(`UPDATE user SET email_verified = TRUE WHERE user_id = ?`, [
+    user[0].user_id,
   ]);
 
   res.send("Email verified successfully.");
 });
 
 const saltRounds = 10; // 비밀번호 해싱에 사용될 salt의 라운드 수
-// 회원가입
-app.post("/register", async (req, res) => {
-  const { email, password, name } = req.body;
 
-  // 비밀번호 해싱
+app.post("/register", async (req, res) => {
+  const { email, password, name, tel, address } = req.body;
+
+  // 먼저 사용자의 email로 user_id를 찾습니다.
+  const user = await db.query(`SELECT user_id FROM user WHERE email = ?`, [
+    email,
+  ]);
+  if (user.length === 0) {
+    return res.status(404).send("사용자를 찾을 수 없습니다.");
+  }
+  const userId = user[0].user_id;
+
+  // 비밀번호를 해싱합니다.
   const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-  // 데이터베이스에 사용자 추가
-  const result = await db.query(
-    "INSERT INTO user (email, password, name, email_verified) VALUES ($1, $2, $3, true) RETURNING *",
-    [email, hashedPassword, name]
+  // user_id를 사용하여 사용자의 나머지 정보를 업데이트합니다.
+  await db.query(
+    `UPDATE user SET password = ?, name = ?, tel = ?, address = ? WHERE user_id = ?`,
+    [hashedPassword, name, tel, address, userId]
   );
 
-  res.json(result.rows[0]);
+  res.send("회원가입이 완료되었습니다.");
 });
 
 // app.post("/register", async (req, res) => {
