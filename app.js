@@ -67,7 +67,7 @@ app.use("/", indexRouter);
 app.post("/send-verification-code", async (req, res) => {
   const { email } = req.body;
   const verificationCode = Math.floor(1000 + Math.random() * 9000); // 4자리 숫자 코드 생성
-  const codeExpires = new Date().getTime() + 3 * 60 * 1000; // 3분 후 만료
+  const codeExpires = Math.floor((new Date().getTime() + 3 * 60 * 1000) / 1000); // 밀리초 대신 초 단위로
 
   await db.query(
     `INSERT INTO user (email, verification_code, code_expires_at) VALUES (?, ?, ?)`,
