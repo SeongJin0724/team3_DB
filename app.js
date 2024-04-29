@@ -30,6 +30,22 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASSWORD,
   },
 });
+const sendVerificationEmail = (email, verificationCode) => {
+  const mailOptions = {
+    from: process.env.EMAIL_USERNAME,
+    to: email,
+    subject: "이메일 인증 코드",
+    text: `인증 코드: ${verificationCode}`,
+  };
+
+  transporter.sendMail(mailOptions, function (error, info) {
+    if (error) {
+      console.log(error);
+    } else {
+      console.log("Email sent: " + info.response);
+    }
+  });
+};
 app.use(cors());
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
@@ -71,7 +87,7 @@ app.post("/register", async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 });
-router.post("/verify-email", async (req, res) => {
+app.post("/verify-email", async (req, res) => {
   const { email, verificationCode } = req.body;
 
   try {
