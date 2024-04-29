@@ -48,98 +48,146 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/", indexRouter);
 // app.use('/users', usersRouter);
 
-// 이메일 인증 코드 보내기 API
-app.post("/api/send-verification-code", (req, res) => {
-  const { email } = req.body;
-  const verificationCode = Math.floor(1000 + Math.random() * 900000); // 6자리 코드 생성
-  const expires = new Date();
-  expires.setMinutes(expires.getMinutes() + 3); // 코드 만료 시간 설정 (10분 후)
+app.post("/register", async (req, res) => {
+  const { email, password, name, tel, address } = req.body;
+  const verificationCode = Math.floor(1000 + Math.random() * 900000);
+  const codeExpires = new Date();
+  codeExpires.setMinutes(codeExpires.getMinutes() + 3);
 
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: email,
-    subject: "회원가입 인증 코드",
-    html: `<p>귀하의 인증 코드는 ${verificationCode}입니다.</p>`,
-  };
+  try {
+    const conn = await db.getConnection();
+    await conn.query(
+      "INSERT INTO user (email, password, name, tel, address, verification_code, code_expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      [email, password, name, tel, address, verificationCode, codeExpires]
+    );
+    conn.end();
 
-  transporter.sendMail(mailOptions, (error, info) => {
-    if (error) {
-      return res.status(500).send("Error sending email");
-    }
+    sendVerificationEmail(email, verificationCode); // 이메일 전송 함수 호출
 
-    // 데이터베이스에 인증 코드 저장
-    const query =
-      "UPDATE user SET verification_code=?, code_expires_at=? WHERE email=?";
-    db.query(query, [verificationCode, expires, email], (error, results) => {
-      if (error) {
-        return res.status(500).send("Error updating database");
-      }
-      res.status(200).send("Verification code sent");
+    res.json({
+      message: "회원가입을 위한 인증 코드가 이메일로 전송되었습니다.",
     });
-  });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
-
-// 이메일 인증 코드 확인 API
-app.post("/api/verify", (req, res) => {
+router.post("/verify-email", async (req, res) => {
   const { email, verificationCode } = req.body;
 
-  const query =
-    "SELECT * FROM user WHERE email=? AND verification_code=? AND code_expires_at > NOW()";
-  db.query(query, [email, verificationCode], (error, results) => {
-    if (error || results.length === 0) {
-      return res.status(400).send("Invalid or expired code");
-    }
-
-    const updateQuery =
-      "UPDATE user SET verified=1, verification_code=NULL, code_expires_at=NULL WHERE email=?";
-    db.query(updateQuery, [email], (error, results) => {
-      if (error) {
-        return res.status(500).send("Server error");
-      }
-      res.status(200).send("Account verified successfully");
-    });
-  });
-});
-
-// 회원가입 API
-app.post("/api/signup", (req, res) => {
-  const {
-    email,
-    password,
-    name,
-    tel,
-    address,
-    bankName,
-    accountNum,
-    accountOwner,
-  } = req.body;
-
-  // 먼저 사용자가 이메일을 인증했는지 확인
-  const verifiedQuery = "SELECT verified FROM user WHERE email = ?";
-  db.query(verifiedQuery, [email], (error, results) => {
-    if (error) {
-      return res.status(500).send("Server error");
-    }
-    if (results.length === 0 || results[0].verified === 0) {
-      return res.status(400).send("Email not verified");
-    }
-
-    // 사용자 정보를 데이터베이스에 저장하는 쿼리
-    const query =
-      "INSERT INTO user (email, password, name, tel, address, bankName, accountNum, accountOwner, verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)";
-
-    db.query(
-      query,
-      [email, password, name, tel, address, bankName, accountNum, accountOwner],
-      (error, results) => {
-        if (error) {
-          return res.status(500).send("Server error");
-        }
-        res.status(200).send("User registered successfully.");
-      }
+  try {
+    const conn = await pool.getConnection();
+    const result = await conn.query(
+      "SELECT * FROM user WHERE email = ? AND verification_code = ? AND code_expires_at > NOW()",
+      [email, verificationCode]
     );
-  });
+
+    if (result.length > 0) {
+      // 이메일 인증 성공 처리 (예: verified 필드를 1로 업데이트)
+      await conn.query("UPDATE user SET verified = 1 WHERE email = ?", [email]);
+      res.json({ message: "이메일 인증에 성공하였습니다." });
+    } else {
+      res
+        .status(400)
+        .json({ message: "유효하지 않은 인증 코드이거나 만료되었습니다." });
+    }
+
+    conn.end();
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
+// // 이메일 인증 코드 보내기 API
+// app.post("/api/send-verification-code", (req, res) => {
+//   const { email } = req.body;
+//   const verificationCode = Math.floor(1000 + Math.random() * 900000); // 6자리 코드 생성
+//   const expires = new Date();
+//   expires.setMinutes(expires.getMinutes() + 3); // 코드 만료 시간 설정 (10분 후)
+
+//   const mailOptions = {
+//     from: process.env.EMAIL_USER,
+//     to: email,
+//     subject: "회원가입 인증 코드",
+//     html: `<p>귀하의 인증 코드는 ${verificationCode}입니다.</p>`,
+//   };
+
+//   transporter.sendMail(mailOptions, (error, info) => {
+//     if (error) {
+//       return res.status(500).send("Error sending email");
+//     }
+
+//     // 데이터베이스에 인증 코드 저장
+//     const query =
+//       "UPDATE user SET verification_code=?, code_expires_at=? WHERE email=?";
+//     db.query(query, [verificationCode, expires, email], (error, results) => {
+//       if (error) {
+//         return res.status(500).send("Error updating database");
+//       }
+//       res.status(200).send("Verification code sent");
+//     });
+//   });
+// });
+
+// // 이메일 인증 코드 확인 API
+// app.post("/api/verify", (req, res) => {
+//   const { email, verificationCode } = req.body;
+
+//   const query =
+//     "SELECT * FROM user WHERE email=? AND verification_code=? AND code_expires_at > NOW()";
+//   db.query(query, [email, verificationCode], (error, results) => {
+//     if (error || results.length === 0) {
+//       return res.status(400).send("Invalid or expired code");
+//     }
+
+//     const updateQuery =
+//       "UPDATE user SET verified=1, verification_code=NULL, code_expires_at=NULL WHERE email=?";
+//     db.query(updateQuery, [email], (error, results) => {
+//       if (error) {
+//         return res.status(500).send("Server error");
+//       }
+//       res.status(200).send("Account verified successfully");
+//     });
+//   });
+// });
+
+// // 회원가입 API
+// app.post("/api/signup", (req, res) => {
+//   const {
+//     email,
+//     password,
+//     name,
+//     tel,
+//     address,
+//     bankName,
+//     accountNum,
+//     accountOwner,
+//   } = req.body;
+
+//   // 먼저 사용자가 이메일을 인증했는지 확인
+//   const verifiedQuery = "SELECT verified FROM user WHERE email = ?";
+//   db.query(verifiedQuery, [email], (error, results) => {
+//     if (error) {
+//       return res.status(500).send("Server error");
+//     }
+//     if (results.length === 0 || results[0].verified === 0) {
+//       return res.status(400).send("Email not verified");
+//     }
+
+//     // 사용자 정보를 데이터베이스에 저장하는 쿼리
+//     const query =
+//       "INSERT INTO user (email, password, name, tel, address, bankName, accountNum, accountOwner, verified) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)";
+
+//     db.query(
+//       query,
+//       [email, password, name, tel, address, bankName, accountNum, accountOwner],
+//       (error, results) => {
+//         if (error) {
+//           return res.status(500).send("Server error");
+//         }
+//         res.status(200).send("User registered successfully.");
+//       }
+//     );
+//   });
+// });
 
 // 로그인 API (Promise 기반으로 수정)
 app.post("/api/login", async (req, res) => {
