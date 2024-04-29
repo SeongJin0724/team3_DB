@@ -116,21 +116,30 @@ const saltRounds = 10; // 비밀번호 해싱에 사용될 salt의 라운드 수
 app.post("/register", async (req, res) => {
   const { email, password, name, tel, address } = req.body;
 
-  // 먼저 사용자의 email로 user_id를 찾습니다.
-  const user = await db.query(`SELECT user_id FROM user WHERE email = ?`, [
-    email,
-  ]);
+  // 먼저 사용자의 이메일로 이메일 인증 여부를 확인합니다.
+  const [user] = await db.query(
+    `SELECT user_id, email_verified FROM user WHERE email = ?`,
+    [email]
+  );
+
+  // 사용자가 데이터베이스에 없거나 이메일 인증이 안된 경우
   if (user.length === 0) {
-    return res.status(404).send("사용자를 찾을 수 없습니다.");
+    return res
+      .status(404)
+      .send("사용자를 찾을 수 없거나 이메일 인증이 필요합니다.");
   }
+  if (!user[0].email_verified) {
+    return res.status(401).send("이메일 인증이 필요합니다.");
+  }
+
   const userId = user[0].user_id;
 
   // 비밀번호를 해싱합니다.
   const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-  // user_id를 사용하여 사용자의 나머지 정보를 업데이트합니다.
+  // 이메일 인증이 된 경우, 나머지 정보를 업데이트합니다.
   await db.query(
-    `UPDATE user SET password = ?, name = ?, tel = ?, address = ? WHERE user_id = ?`,
+    `UPDATE user SET password = ?, name = ?, tel = ?, address = ? WHERE user_id = ? AND email_verified = 1`,
     [hashedPassword, name, tel, address, userId]
   );
 
