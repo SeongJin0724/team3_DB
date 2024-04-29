@@ -150,7 +150,12 @@ app.post("/api/login", async (req, res) => {
           process.env.JWT_SECRET, // JWT 비밀키
           { expiresIn: "4h" } // 토큰 만료 시간
         );
-
+        res.cookie("token", token, {
+          httpOnly: true,
+          sameSite: "strict", // 'none', 'lax', 또는 'strict' 중 선택
+          secure: true, // 로컬 개발 환경에서는 false로 설정할 수 있습니다.
+          maxAge: 4 * 60 * 60 * 1000, // 쿠키 유효 시간 (여기서는 4시간)
+        });
         res.send({ message: "Logged in successfully!", token });
       } else {
         res.status(401).send({ message: "Invalid email or password" });
