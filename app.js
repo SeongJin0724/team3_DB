@@ -30,22 +30,22 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASSWORD,
   },
 });
-const sendVerificationEmail = (email, verificationCode) => {
-  const mailOptions = {
-    from: process.env.EMAIL_USERNAME,
-    to: email,
-    subject: "이메일 인증 코드",
-    text: `인증 코드: ${verificationCode}`,
-  };
+// const sendVerificationEmail = (email, verificationCode) => {
+//   const mailOptions = {
+//     from: process.env.EMAIL_USERNAME,
+//     to: email,
+//     subject: "이메일 인증 코드",
+//     text: `인증 코드: ${verificationCode}`,
+//   };
 
-  transporter.sendMail(mailOptions, function (error, info) {
-    if (error) {
-      console.log(error);
-    } else {
-      console.log("Email sent: " + info.response);
-    }
-  });
-};
+//   transporter.sendMail(mailOptions, function (error, info) {
+//     if (error) {
+//       console.log(error);
+//     } else {
+//       console.log("Email sent: " + info.response);
+//     }
+//   });
+// };
 app.use(cors());
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
@@ -64,54 +64,114 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/", indexRouter);
 // app.use('/users', usersRouter);
 
-app.post("/register", async (req, res) => {
-  const { email, password, name, tel, address } = req.body;
-  const verificationCode = Math.floor(1000 + Math.random() * 900000);
-  const codeExpires = new Date();
-  codeExpires.setMinutes(codeExpires.getMinutes() + 3);
+// 임시 저장소
+let tempStorage = {};
 
-  try {
-    const conn = await db.getConnection();
-    await conn.query(
-      "INSERT INTO user (email, password, name, tel, address, verification_code, code_expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
-      [email, password, name, tel, address, verificationCode, codeExpires]
-    );
-    conn.end();
+// 이메일 인증 코드 전송
+app.post("/send-verification-code", async (req, res) => {
+  const { email } = req.body;
+  const verificationCode = Math.floor(1000 + Math.random() * 900000); // 6자리 숫자 코드 생성
+  const codeExpires = new Date().getTime() + 3 * 60 * 1000; // 3분 후 만료
 
-    sendVerificationEmail(email, verificationCode); // 이메일 전송 함수 호출
+  tempStorage[email] = { verificationCode, codeExpires };
 
-    res.json({
-      message: "회원가입을 위한 인증 코드가 이메일로 전송되었습니다.",
-    });
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+  // 이메일 전송
+  await transporter.sendMail({
+    from: process.env.EMAIL_USERNAME,
+    to: email,
+    subject: "이메일 인증 코드",
+    text: `이메일 인증코드: ${verificationCode}`,
+  });
+
+  res.send("Verification code sent.");
 });
+// 이메일 인증 코드 검증
 app.post("/verify-email", async (req, res) => {
   const { email, verificationCode } = req.body;
+  const { verificationCode: storedCode, codeExpires } =
+    tempStorage[email] || {};
 
-  try {
-    const conn = await db.getConnection();
-    const result = await conn.query(
-      "SELECT * FROM user WHERE email = ? AND verification_code = ? AND code_expires_at > NOW()",
-      [email, verificationCode]
-    );
-
-    if (result.length > 0) {
-      // 이메일 인증 성공 처리 (예: verified 필드를 1로 업데이트)
-      await conn.query("UPDATE user SET verified = 1 WHERE email = ?", [email]);
-      res.json({ message: "이메일 인증에 성공하였습니다." });
-    } else {
-      res
-        .status(400)
-        .json({ message: "유효하지 않은 인증 코드이거나 만료되었습니다." });
-    }
-
-    conn.end();
-  } catch (error) {
-    res.status(500).json({ message: error.message });
+  if (!storedCode || !codeExpires || new Date().getTime() > codeExpires) {
+    return res.status(400).send("Invalid or expired verification code.");
   }
+
+  if (verificationCode !== storedCode.toString()) {
+    return res.status(400).send("Incorrect verification code.");
+  }
+
+  // 이메일 인증 상태를 데이터베이스에 저장
+  await db.query("UPDATE user SET email_verified = true WHERE email = $1", [
+    email,
+  ]);
+
+  res.send("Email verified successfully.");
 });
+
+const saltRounds = 10; // 비밀번호 해싱에 사용될 salt의 라운드 수
+// 회원가입
+app.post("/register", async (req, res) => {
+  const { email, password, name } = req.body;
+
+  // 비밀번호 해싱
+  const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+  // 데이터베이스에 사용자 추가
+  const result = await db.query(
+    "INSERT INTO user (email, password, name, email_verified) VALUES ($1, $2, $3, true) RETURNING *",
+    [email, hashedPassword, name]
+  );
+
+  res.json(result.rows[0]);
+});
+
+// app.post("/register", async (req, res) => {
+//   const { email, password, name, tel, address } = req.body;
+//   const verificationCode = Math.floor(1000 + Math.random() * 900000);
+//   const codeExpires = new Date();
+//   codeExpires.setMinutes(codeExpires.getMinutes() + 3);
+
+//   try {
+//     const conn = await db.getConnection();
+//     await conn.query(
+//       "INSERT INTO user (email, password, name, tel, address, verification_code, code_expires_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+//       [email, password, name, tel, address, verificationCode, codeExpires]
+//     );
+//     conn.end();
+
+//     sendVerificationEmail(email, verificationCode); // 이메일 전송 함수 호출
+
+//     res.json({
+//       message: "회원가입을 위한 인증 코드가 이메일로 전송되었습니다.",
+//     });
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// });
+// app.post("/verify-email", async (req, res) => {
+//   const { email, verificationCode } = req.body;
+
+//   try {
+//     const conn = await db.getConnection();
+//     const result = await conn.query(
+//       "SELECT * FROM user WHERE email = ? AND verification_code = ? AND code_expires_at > NOW()",
+//       [email, verificationCode]
+//     );
+
+//     if (result.length > 0) {
+//       // 이메일 인증 성공 처리 (예: verified 필드를 1로 업데이트)
+//       await conn.query("UPDATE user SET verified = 1 WHERE email = ?", [email]);
+//       res.json({ message: "이메일 인증에 성공하였습니다." });
+//     } else {
+//       res
+//         .status(400)
+//         .json({ message: "유효하지 않은 인증 코드이거나 만료되었습니다." });
+//     }
+
+//     conn.end();
+//   } catch (error) {
+//     res.status(500).json({ message: error.message });
+//   }
+// });
 // // 이메일 인증 코드 보내기 API
 // app.post("/api/send-verification-code", (req, res) => {
 //   const { email } = req.body;
