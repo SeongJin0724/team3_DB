@@ -30,18 +30,6 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASSWORD,
   },
 });
-// express-session 및 express-mysql-session 설정
-const sessionStore = new MySQLStore({}, db);
-
-app.use(
-  session({
-    key: "session_cookie_name",
-    secret: "session_cookie_secret",
-    store: sessionStore,
-    resave: false,
-    saveUninitialized: false,
-  })
-);
 app.use(cors());
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
