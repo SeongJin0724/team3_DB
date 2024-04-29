@@ -69,26 +69,10 @@ app.post("/send-verification-code", async (req, res) => {
   const verificationCode = Math.floor(1000 + Math.random() * 9000); // 4자리 숫자 코드 생성
   const codeExpires = new Date().getTime() + 3 * 60 * 1000; // 3분 후 만료
 
-  // 먼저 사용자의 이메일이 이미 존재하는지 확인
-  const existingUser = await db.query(
-    `SELECT user_id FROM user WHERE email = ?`,
-    [email]
+  await db.query(
+    `INSERT INTO user (email, verification_code, code_expires_at) VALUES (?, ?, ?)`,
+    [email, verificationCode, codeExpires]
   );
-  if (existingUser.length > 0) {
-    console.log("error");
-    // 이미 존재하는 이메일이면, 기존 코드를 업데이트
-    await db.query(
-      `UPDATE user SET verification_code = ?, code_expires_at = ? WHERE email = ?`,
-      [verificationCode, codeExpires, email]
-    );
-  } else {
-    console.log("good");
-    // 새 이메일이면, 새로운 레코드 생성
-    await db.query(
-      `INSERT INTO user (email, verification_code, code_expires_at) VALUES (?, ?, ?)`,
-      [email, verificationCode, codeExpires]
-    );
-  }
 
   // 이메일 전송 로직
   await transporter.sendMail({
