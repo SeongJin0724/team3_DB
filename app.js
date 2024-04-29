@@ -75,12 +75,14 @@ app.post("/send-verification-code", async (req, res) => {
     [email]
   );
   if (existingUser.length > 0) {
+    console.log("error");
     // 이미 존재하는 이메일이면, 기존 코드를 업데이트
     await db.query(
       `UPDATE user SET verification_code = ?, code_expires_at = ? WHERE email = ?`,
       [verificationCode, codeExpires, email]
     );
   } else {
+    console.log("good");
     // 새 이메일이면, 새로운 레코드 생성
     await db.query(
       `INSERT INTO user (email, verification_code, code_expires_at) VALUES (?, ?, ?)`,
