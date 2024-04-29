@@ -13,7 +13,7 @@ const crypto = require("crypto");
 const secret = crypto.randomBytes(64).toString("hex");
 const jwt = require("jsonwebtoken");
 // var indexRouter = require("./routes/index");
-
+console.log(secret);
 var app = express();
 const mysql = require("mysql2/promise");
 
