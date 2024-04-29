@@ -69,7 +69,7 @@ app.post("/api/send-verification-code", (req, res) => {
 
     // 데이터베이스에 인증 코드 저장
     const query =
-      "UPDATE users SET verification_code=?, code_expires_at=? WHERE email=?";
+      "UPDATE user SET verification_code=?, code_expires_at=? WHERE email=?";
     db.query(query, [verificationCode, expires, email], (error, results) => {
       if (error) {
         return res.status(500).send("Error updating database");
@@ -84,14 +84,14 @@ app.post("/api/verify", (req, res) => {
   const { email, verificationCode } = req.body;
 
   const query =
-    "SELECT * FROM users WHERE email=? AND verification_code=? AND code_expires_at > NOW()";
+    "SELECT * FROM user WHERE email=? AND verification_code=? AND code_expires_at > NOW()";
   db.query(query, [email, verificationCode], (error, results) => {
     if (error || results.length === 0) {
       return res.status(400).send("Invalid or expired code");
     }
 
     const updateQuery =
-      "UPDATE users SET verified=1, verification_code=NULL, code_expires_at=NULL WHERE email=?";
+      "UPDATE user SET verified=1, verification_code=NULL, code_expires_at=NULL WHERE email=?";
     db.query(updateQuery, [email], (error, results) => {
       if (error) {
         return res.status(500).send("Server error");
