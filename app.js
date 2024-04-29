@@ -32,7 +32,7 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASSWORD,
   },
 });
-app.use(cors());
+app.use(cors({ credentials: true }));
 
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
@@ -162,6 +162,12 @@ app.post("/api/login", async (req, res) => {
     console.error(err);
     res.status(500).send({ message: "An error occurred" });
   }
+});
+
+// 로그아웃
+app.post("/api/logout", (req, res) => {
+  res.clearCookie("token");
+  res.send({ message: "Logged out successfully!" });
 });
 
 // 유저 조회
