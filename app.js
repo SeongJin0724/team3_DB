@@ -64,8 +64,6 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/", indexRouter);
 // app.use('/users', usersRouter);
 
-// 임시 저장소
-
 app.post("/send-verification-code", async (req, res) => {
   const { email } = req.body;
   const verificationCode = Math.floor(1000 + Math.random() * 9000); // 4자리 숫자 코드 생성
@@ -73,7 +71,7 @@ app.post("/send-verification-code", async (req, res) => {
 
   // 먼저 사용자의 이메일이 이미 존재하는지 확인
   const existingUser = await db.query(
-    `SELECT user_id FROM users WHERE email = ?`,
+    `SELECT user_id FROM user WHERE email = ?`,
     [email]
   );
   if (existingUser.length > 0) {
