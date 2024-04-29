@@ -90,10 +90,13 @@ app.post("/send-verification-code", async (req, res) => {
 //이메일 코드 검증
 app.post("/verify-code", async (req, res) => {
   const { email, verificationCode } = req.body;
-  // 사용자의 이메일과 인증 코드로 검증
-  const user = await db.query(
+  // 현재 시각을 MySQL DATETIME 형식으로 변환
+  const now = new Date().toISOString().slice(0, 19).replace("T", " ");
+
+  // 사용자의 이메일과 인증 코드로 검증, 만료되지 않은 코드인지 확인
+  const [user] = await db.query(
     `SELECT user_id FROM user WHERE email = ? AND verification_code = ? AND code_expires_at > ?`,
-    [email, verificationCode, new Date().getTime()]
+    [email, verificationCode, now]
   );
 
   if (user.length === 0) {
@@ -101,7 +104,6 @@ app.post("/verify-code", async (req, res) => {
   }
 
   // 이메일이 검증된 것으로 표시 (예: 이메일 인증 상태 업데이트)
-  // 실제 구현에서는 이메일 인증 상태를 나타내는 별도의 필드가 필요할 수 있습니다.
   await db.query(`UPDATE user SET email_verified = TRUE WHERE user_id = ?`, [
     user[0].user_id,
   ]);
