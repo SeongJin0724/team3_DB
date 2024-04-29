@@ -91,7 +91,7 @@ app.post("/verify-email", async (req, res) => {
   const { email, verificationCode } = req.body;
 
   try {
-    const conn = await pool.getConnection();
+    const conn = await db.getConnection();
     const result = await conn.query(
       "SELECT * FROM user WHERE email = ? AND verification_code = ? AND code_expires_at > NOW()",
       [email, verificationCode]
