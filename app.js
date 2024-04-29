@@ -322,6 +322,17 @@ app.get("/api/users", async (req, res) => {
   }
 });
 
+// 마이페이지
+app.get("/api/mypage", async (req, res) => {
+  try {
+    const [data, fields] = await db.query("SELECT * FROM user");
+    res.send(data);
+  } catch (err) {
+    console.log(err);
+    res.status(500).send({ message: "An error occurred" });
+  }
+});
+
 // 검색
 app.get("/api/search", async (req, res) => {
   const searchTerm = req.query.term;
