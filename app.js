@@ -32,7 +32,7 @@ const transporter = nodemailer.createTransport({
     pass: process.env.EMAIL_PASSWORD,
   },
 });
-app.use(cors({ credentials: true }));
+app.use(cors({ origin: true, credentials: true }));
 
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
