@@ -60,64 +60,55 @@ app.use(express.static(path.join(__dirname, "public")));
 app.use("/", indexRouter);
 // app.use('/users', usersRouter);
 
-// 인증 코드 전송 API
-app.post("/api/send-verification-code", async (req, res) => {
+// 이메일 인증 코드 보내기 API
+app.post("/api/send-verification-code", (req, res) => {
   const { email } = req.body;
-  const verificationCode = Math.floor(1000 + Math.random() * 9000).toString();
-  const codeExpires = new Date();
-  codeExpires.setMinutes(codeExpires.getMinutes() + 3);
+  const verificationCode = Math.floor(100000 + Math.random() * 900000); // 6자리 코드 생성
+  const expires = new Date();
+  expires.setMinutes(expires.getMinutes() + 10); // 코드 만료 시간 설정 (10분 후)
 
-  try {
-    const insertQuery =
-      "INSERT INTO user (email, verification_code, code_expires_at) VALUES (?, ?, ?) ON DUPLICATE KEY UPDATE verification_code = ?, code_expires_at = ?";
-    db.query(
-      insertQuery,
-      [email, verificationCode, codeExpires, verificationCode, codeExpires],
-      (error, results) => {
-        if (error) {
-          console.error("Error inserting verification code:", error);
-          return res.status(500).send("Failed to store verification code");
-        }
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: "회원가입 인증 코드",
+    html: `<p>귀하의 인증 코드는 ${verificationCode}입니다.</p>`,
+  };
 
-        const mailOptions = {
-          from: process.env.EMAIL_USER,
-          to: email,
-          subject: "회원가입 인증 코드",
-          html: `<p>귀하의 인증 코드는 ${verificationCode}입니다.</p>`,
-        };
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      return res.status(500).send("Error sending email");
+    }
 
-        transporter.sendMail(mailOptions, (error, info) => {
-          if (error) {
-            return res.status(500).send("Email send error");
-          }
-          res.status(200).send("Verification code sent");
-        });
+    // 데이터베이스에 인증 코드 저장
+    const query =
+      "UPDATE users SET verification_code=?, code_expires_at=? WHERE email=?";
+    db.query(query, [verificationCode, expires, email], (error, results) => {
+      if (error) {
+        return res.status(500).send("Error updating database");
       }
-    );
-  } catch (error) {
-    console.error("Error sending email code:", error);
-    res.status(500).send("Failed to send email code");
-  }
+      res.status(200).send("Verification code sent");
+    });
+  });
 });
 
-// 인증 코드 확인 API
+// 이메일 인증 코드 확인 API
 app.post("/api/verify", (req, res) => {
   const { email, verificationCode } = req.body;
 
   const query =
-    "SELECT * FROM user WHERE email = ? AND verification_code = ? AND code_expires_at > NOW()";
-
+    "SELECT * FROM users WHERE email=? AND verification_code=? AND code_expires_at > NOW()";
   db.query(query, [email, verificationCode], (error, results) => {
     if (error || results.length === 0) {
       return res.status(400).send("Invalid or expired code");
     }
 
-    const updateQuery = "UPDATE user SET verified = 1 WHERE email = ?";
+    const updateQuery =
+      "UPDATE users SET verified=1, verification_code=NULL, code_expires_at=NULL WHERE email=?";
     db.query(updateQuery, [email], (error, results) => {
       if (error) {
         return res.status(500).send("Server error");
       }
-      res.status(200).send("Account verified successfully.");
+      res.status(200).send("Account verified successfully");
     });
   });
 });
