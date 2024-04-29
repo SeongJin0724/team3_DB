@@ -51,9 +51,9 @@ app.use("/", indexRouter);
 // 이메일 인증 코드 보내기 API
 app.post("/api/send-verification-code", (req, res) => {
   const { email } = req.body;
-  const verificationCode = Math.floor(100000 + Math.random() * 900000); // 6자리 코드 생성
+  const verificationCode = Math.floor(1000 + Math.random() * 900000); // 6자리 코드 생성
   const expires = new Date();
-  expires.setMinutes(expires.getMinutes() + 10); // 코드 만료 시간 설정 (10분 후)
+  expires.setMinutes(expires.getMinutes() + 3); // 코드 만료 시간 설정 (10분 후)
 
   const mailOptions = {
     from: process.env.EMAIL_USER,
