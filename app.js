@@ -241,6 +241,18 @@ app.get("/api/brands/:brand", async (req, res) => {
   }
 });
 
+// 마이페이지
+app.get("/api/mypage/:id", async (req, res) => {
+  const { email, password, tel } = req.body;
+  const { user_id } = req.params;
+  const sqlUpdate =
+    "UPDATE user SET email = ?, password = ?, tel = ? WHERE user_id = ?";
+  db.query(sqlUpdate, [email, password, tel, user_id], (err, result) => {
+    if (err) throw err;
+    res.send(result);
+  });
+});
+
 // 신규 판매 상품
 app.get("/api/newin", async (req, res) => {
   let limit = 5;
