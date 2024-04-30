@@ -230,22 +230,16 @@ app.get("/api/brands/:brand", async (req, res) => {
   }
 });
 
-// 마이페이지
-app.put("/api/mypage/:user_id", (req, res) => {
-  const { user_id } = req.params; // URL에서 userId 파라미터를 추출
-  const { email, password, tel } = req.body; // 요청 본문에서 정보를 추출
-
-  // 데이터베이스에서 userId에 해당하는 사용자를 찾아 정보를 업데이트합니다.
-  // 아래 코드는 데이터베이스와의 상호작용을 가정한 가상의 코드입니다.
-  // 실제 구현시에는 사용 중인 데이터베이스 API에 맞게 코드를 작성해야 합니다.
-  updateUserInDatabase(user_id, { email, password, tel })
-    .then(() => {
-      res.send("회원 정보가 수정되었습니다.");
-    })
-    .catch((error) => {
-      console.error("Error updating user information:", error);
-      res.status(500).send("회원 정보 수정 중 오류가 발생했습니다.");
-    });
+// infochange
+app.put("/api/infochange/:user_id", async (req, res) => {
+  const { email, password, tel } = req.body;
+  const { user_id } = req.params;
+  const sqlUpdate =
+    "UPDATE user SET email = ?, password = ?, tel = ? WHERE user_id = ?";
+  db.query(sqlUpdate, [email, password, tel, user_id], (err, result) => {
+    if (err) throw err;
+    res.send(result);
+  });
 });
 
 // 신규 판매 상품
