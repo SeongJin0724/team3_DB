@@ -12,6 +12,7 @@ const PORT = process.env.PORT || 4000;
 const crypto = require("crypto");
 const secret = crypto.randomBytes(64).toString("hex");
 const jwt = require("jsonwebtoken");
+const multer = require("multer");
 // var indexRouter = require("./routes/index");
 console.log(secret);
 var app = express();
@@ -256,6 +257,45 @@ app.get("/api/newin", async (req, res) => {
     console.error("Error:", err);
     res.status(500).send({ error: "서버 에러" });
   }
+});
+
+// 스타일
+app.get("/api/reviews", async (req, res) => {
+  try {
+    const data = await db.query("SELECT * FROM reviews");
+    res.json(data);
+  } catch (err) {
+    console.error("Error:", err);
+    res.status(500).send({ error: "서버 에러" });
+  }
+});
+
+// 스타일 업로드
+// Multer 설정
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/");
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
+});
+const upload = multer({ storage: storage });
+
+app.use("/uploads", express.static("uploads"));
+
+app.post("/upload-image", upload.single("image"), (req, res) => {
+  const imagePath = req.file.path;
+  const reviewContent = req.body.review;
+  const query = "INSERT INTO reviews (content, img) VALUES (?, ?)";
+
+  db.query(query, [reviewContent, imagePath], (err, results) => {
+    if (err) {
+      console.error("An error occurred:", err);
+      return res.status(500).send("An error occurred.");
+    }
+    res.send("Review Uploaded Successfully.");
+  });
 });
 
 // catch 404 and forward to error handler
