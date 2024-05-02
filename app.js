@@ -230,8 +230,8 @@ app.get("/api/brands/:brand", async (req, res) => {
   }
 });
 
-// infochange
-app.put("/api/infochange/:user_id", async (req, res) => {
+// 로그인정보
+app.put("/api/infochange/:user_id", (req, res) => {
   const { email, password, tel } = req.body;
   const { user_id } = req.params;
   const sqlUpdate =
