@@ -156,7 +156,13 @@ app.post("/api/login", async (req, res) => {
           secure: true, // 로컬 개발 환경에서는 false로 설정할 수 있습니다.
           maxAge: 4 * 60 * 60 * 1000, // 쿠키 유효 시간 (여기서는 4시간)
         });
-        res.send({ message: "Logged in successfully!", token });
+        const { password, ...userWithoutPassword } = users[0];
+
+        res.send({
+          message: "Logged in successfully!",
+          token,
+          user: userWithoutPassword, // 클라이언트에게 유저 정보도 함께 보냅니다.
+        });
       } else {
         res.status(401).send({ message: "Invalid email or password" });
       }
