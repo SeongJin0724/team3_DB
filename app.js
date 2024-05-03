@@ -279,8 +279,6 @@ app.get("/api/items/:itemKey", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).send("서버 에러");
-  } finally {
-    if (db) db.end();
   }
 });
 
