@@ -321,6 +321,39 @@ app.post("/upload-image", upload.single("image"), (req, res) => {
   });
 });
 
+//주문 결제
+const SECRET_KEY = "PRD5B1FAF951E00809E83348544DA364D8CB0FDE";
+const CID = "4C42E3740EE291D2D5FE";
+
+app.post("/api/payment/kakao", async (req, res) => {
+  try {
+    const response = await axios({
+      url: "https://kapi.kakao.com/v1/payment/ready",
+      method: "post",
+      headers: {
+        Authorization: `SECRET_KEY ${SECRET_KEY}`,
+        "Content-type": "application/json",
+      },
+      data: qs.stringify({
+        cid: CID,
+        partner_order_id: req.body.partner_order_id,
+        partner_user_id: req.body.partner_user_id,
+        item_name: req.body.item_name,
+        quantity: req.body.quantity,
+        total_amount: req.body.total_amount,
+        tax_free_amount: req.body.tax_free_amount,
+        approval_url: "http://localhost:3000/approval",
+        fail_url: "http://localhost:3000/fail",
+        cancel_url: "http://localhost:3000/cancel",
+      }),
+    });
+    res.json({ next_redirect_pc_url: response.data.next_redirect_pc_url });
+  } catch (error) {
+    console.error(error);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));
