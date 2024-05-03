@@ -268,7 +268,7 @@ app.get("/api/newin", async (req, res) => {
 // 상품 상세페이지
 app.get("/api/items/:itemKey", async (req, res) => {
   try {
-    const rows = await db.query("SELECT * FROM item WHERE itemKey = ?", [
+    const rows = await db.query("SELECT * FROM item WHERE itemKey = 1", [
       req.params.itemKey,
     ]);
     if (rows.length > 0) {
