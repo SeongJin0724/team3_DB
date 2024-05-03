@@ -265,6 +265,27 @@ app.get("/api/newin", async (req, res) => {
   }
 });
 
+// 상품 상세페이지
+app.get("/api/items/:itemKey", async (req, res) => {
+  let conn;
+  try {
+    conn = await db.getConnection();
+    const rows = await conn.query("SELECT * FROM item WHERE itemKey = ?", [
+      req.params.itemKey,
+    ]);
+    if (rows.length > 0) {
+      res.json(rows[0]);
+    } else {
+      res.status(404).send("상품을 찾을 수 없습니다.");
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("서버 에러");
+  } finally {
+    if (conn) conn.end();
+  }
+});
+
 // 스타일
 app.get("/api/reviews", async (req, res) => {
   try {
