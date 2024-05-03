@@ -328,7 +328,7 @@ const CID = "4C42E3740EE291D2D5FE";
 app.post("/api/payment/kakao", async (req, res) => {
   try {
     const response = await axios({
-      url: "https://kapi.kakao.com/v1/payment/ready",
+      url: "https://open-api.kakaopay.com/online/v1/payment/approve",
       method: "post",
       headers: {
         Authorization: `SECRET_KEY ${SECRET_KEY}`,
