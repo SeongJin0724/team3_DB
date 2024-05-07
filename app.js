@@ -250,6 +250,33 @@ app.put("/api/infochange/:user_id", (req, res) => {
   });
 });
 
+//유저 정보 업데이트
+app.post("/api/updateUser", (req, res) => {
+  let updatedUserInfo = req.body;
+
+  let query = `
+    UPDATE users 
+    SET name = ${db.escape(updatedUserInfo.name)}, 
+        tel = ${db.escape(updatedUserInfo.tel)},
+        address = ${db.escape(updatedUserInfo.address)},
+        email = ${db.escape(updatedUserInfo.email)},
+        password = ${db.escape(updatedUserInfo.password)}
+    WHERE user_id = ${db.escape(updatedUserInfo.user_id)}
+  `;
+
+  db.query(query, (err, result) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send("Internal Server Error");
+    } else {
+      if (result.affectedRows == 0) {
+        res.status(404).send("User not found");
+      } else {
+        res.send("User updated successfully");
+      }
+    }
+  });
+});
 // 신규 판매 상품
 app.get("/api/newin", async (req, res) => {
   let limit = 5;
