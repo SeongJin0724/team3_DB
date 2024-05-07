@@ -437,17 +437,17 @@ app.post("/api/payment/kakao", async (req, res) => {
       }
     );
 
-    await db.query(
-      "INSERT INTO `order` (user_id, itemKey, dealKey, price, tid, orderStatus) VALUES (?, ?, ?, ?, ?, ?)",
-      [
-        parseInt(partner_user_id),
-        parseInt(item_code),
-        parseInt(partner_order_id),
-        parseInt(total_amount),
-        response.data.tid,
-        "pending",
-      ]
-    );
+    // await db.query(
+    //   "INSERT INTO `order` (user_id, itemKey, dealKey, price, tid, orderStatus) VALUES (?, ?, ?, ?, ?, ?)",
+    //   [
+    //     parseInt(partner_user_id),
+    //     parseInt(item_code),
+    //     parseInt(partner_order_id),
+    //     parseInt(total_amount),
+    //     response.data.tid,
+    //     "pending",
+    //   ]
+    // );
 
     res.json({
       next_redirect_pc_url: response.data.next_redirect_pc_url,
