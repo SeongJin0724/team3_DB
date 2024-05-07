@@ -254,27 +254,35 @@ app.put("/api/infochange/:user_id", (req, res) => {
 app.post("/api/updateUser", (req, res) => {
   let updatedUserInfo = req.body;
 
-  let query = `
-    UPDATE users 
-    SET name = ${db.escape(updatedUserInfo.name)}, 
-        tel = ${db.escape(updatedUserInfo.tel)},
-        address = ${db.escape(updatedUserInfo.address)},
-        email = ${db.escape(updatedUserInfo.email)},
-        password = ${db.escape(updatedUserInfo.password)}
-    WHERE user_id = ${db.escape(updatedUserInfo.user_id)}
-  `;
-
-  db.query(query, (err, result) => {
+  // 비밀번호 해시 처리
+  bcrypt.hash(updatedUserInfo.password, saltRounds, function (err, hash) {
     if (err) {
       console.error(err);
-      res.status(500).send("Internal Server Error");
-    } else {
-      if (result.affectedRows == 0) {
-        res.status(404).send("User not found");
-      } else {
-        res.send("User updated successfully");
-      }
+      return res.status(500).send("Internal Server Error");
     }
+
+    let query = `
+      UPDATE users 
+      SET name = ${db.escape(updatedUserInfo.name)}, 
+          tel = ${db.escape(updatedUserInfo.tel)},
+          address = ${db.escape(updatedUserInfo.address)},
+          email = ${db.escape(updatedUserInfo.email)},
+          password = ${db.escape(hash)} // 해시된 비밀번호 저장
+      WHERE user_id = ${db.escape(updatedUserInfo.user_id)}
+    `;
+
+    db.query(query, (err, result) => {
+      if (err) {
+        console.error(err);
+        res.status(500).send("Internal Server Error");
+      } else {
+        if (result.affectedRows == 0) {
+          res.status(404).send("User not found");
+        } else {
+          res.send("User updated successfully");
+        }
+      }
+    });
   });
 });
 // 신규 판매 상품
