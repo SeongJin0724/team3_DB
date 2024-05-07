@@ -417,7 +417,7 @@ app.post("/api/payment/kakao", async (req, res) => {
     partner_order_id,
     partner_user_id,
     item_name,
-    item_code,
+    // item_code,
     quantity,
     total_amount,
     tax_free_amount,
@@ -434,9 +434,9 @@ app.post("/api/payment/kakao", async (req, res) => {
         quantity,
         total_amount,
         tax_free_amount,
-        approval_url: `http://localhost:3000/api/payment/approval?dealKey=${partner_order_id}`,
-        fail_url: "http://localhost:3000",
-        cancel_url: "http://localhost:3000",
+        approval_url: `http://127.0.0.1:3000/api/payment/approval?dealKey=${partner_order_id}`,
+        fail_url: "http://127.0.0.1:3000",
+        cancel_url: "http://127.0.0.1:3000",
       },
       {
         headers: {
@@ -446,17 +446,17 @@ app.post("/api/payment/kakao", async (req, res) => {
       }
     );
 
-    await db.query(
-      "INSERT INTO `order` (user_id, itemKey, dealKey, price, tid, orderStatus) VALUES (?, ?, ?, ?, ?, ?)",
-      [
-        partner_user_id,
-        item_code,
-        partner_order_id,
-        total_amount,
-        response.data.tid,
-        "pending",
-      ]
-    );
+    // await db.query(
+    //   "INSERT INTO `order` (user_id, itemKey, dealKey, price, tid, orderStatus) VALUES (?, ?, ?, ?, ?, ?)",
+    //   [
+    //     parseInt(partner_user_id),
+    //     parseInt(item_code),
+    //     parseInt(partner_order_id),
+    //     parseInt(total_amount),
+    //     response.data.tid,
+    //     "pending",
+    //   ]
+    // );
 
     res.json({
       next_redirect_pc_url: response.data.next_redirect_pc_url,
