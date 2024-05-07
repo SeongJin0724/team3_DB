@@ -326,7 +326,7 @@ app.post("/upload-image", upload.single("image"), (req, res) => {
 const SECRET_KEY = "PRD5B1FAF951E00809E83348544DA364D8CB0FDE";
 // const CID = "TC0ONETIME";
 
-app.post("/api/payment/kakao", async (req, res) => {
+app.get("/api/payment/kakao", async (req, res) => {
   console.log("오고있어");
 
   const {
