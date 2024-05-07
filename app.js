@@ -295,7 +295,7 @@ app.get("/api/reviews", async (req, res) => {
 });
 
 // 주소록
-app.put("/api/mypage/address", async (req, res) => {
+app.post("/api/mypage/address", async (req, res) => {
   // 'req.body'에서 'address'와 'user_id' 추출
   const { address, user_id } = req.body;
 
