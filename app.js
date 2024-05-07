@@ -351,32 +351,32 @@ app.post("/api/mypage/address", async (req, res) => {
 });
 
 app.post("/api/AddressUpdate", async (req, res) => {
-  const { userId, address } = req.body; // 요청에서 userId와 address를 추출
+  const { user_id, address } = req.body; // 요청에서 userId와 address를 추출
 
   // 입력 데이터 유효성 검사
-  if (!userId || !address) {
-    return res.status(400).json({ error: "userId and address are required" });
+  if (!user_id || !address) {
+    return res.status(400).send({ error: "userId and address are required" });
   }
 
   try {
     // 데이터베이스에 연결하여 사용자 정보를 업데이트
     const query = `
-      UPDATE users SET address = ? WHERE id = ?
+      UPDATE users SET address = ? WHERE user_id = ?
     `;
-    const [result] = await pool.query(query, [address, userId]);
+    const [result] = await pool.query(query, [address, user_id]);
 
     if (result.affectedRows === 0) {
       // 업데이트된 행이 없다면, 사용자가 존재하지 않는 것으로 간주
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).send({ error: "User not found" });
     }
 
     // 성공 응답 보내기
     res
       .status(200)
-      .json({ success: true, message: "Address updated successfully" });
+      .send({ success: true, message: "Address updated successfully" });
   } catch (error) {
     console.error("Error updating address:", error);
-    res.status(500).json({ error: "Internal server error" });
+    res.status(500).send({ error: "Internal server error" });
   }
 });
 
