@@ -404,9 +404,9 @@ app.post("/api/payment/kakao", async (req, res) => {
         quantity,
         total_amount,
         tax_free_amount,
-        approval_url: `http://localhost:3000/api/payment/approval?dealKey=${partner_order_id}`,
-        fail_url: "http://localhost:3000",
-        cancel_url: "http://localhost:3000",
+        approval_url: `http://127.0.0.1:3000/api/payment/approval?dealKey=${partner_order_id}`,
+        fail_url: "http://127.0.0.1:3000",
+        cancel_url: "http://127.0.0.1:3000",
       },
       {
         headers: {
