@@ -370,6 +370,7 @@ app.post("/upload-image", upload.single("image"), (req, res) => {
 });
 
 //주문 결제
+const axios = require("axios");
 const SECRET_KEY = "PRD5B1FAF951E00809E83348544DA364D8CB0FDE";
 // const CID = "TC0ONETIME";
 
