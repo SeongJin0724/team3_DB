@@ -419,10 +419,10 @@ app.post("/api/payment/kakao", async (req, res) => {
     await db.query(
       "INSERT INTO `order` (user_id, itemKey, dealKey, price, tid, orderStatus) VALUES (?, ?, ?, ?, ?, ?)",
       [
-        partner_user_id,
-        item_code,
-        partner_order_id,
-        total_amount,
+        parseInt(partner_user_id),
+        parseInt(item_code),
+        parseInt(partner_order_id),
+        parseInt(total_amount),
         response.data.tid,
         "pending",
       ]
