@@ -370,12 +370,14 @@ app.post("/upload-image", upload.single("image"), (req, res) => {
 });
 
 //주문 결제
-const axios = require("axios");
-const SECRET_KEY = "DEVA4D244E550D373216ADECD766358F6503373E";
-// const CID = "TC0ONETIME";
 
-app.post("/api/payment/kakao", async (req, res) => {
-  console.log(req.body);
+///
+
+const SECRET_KEY = "DEVA4D244E550D373216ADECD766358F6503373E";
+
+router.post("/api/payment/kakao", async (request, response) => {
+  // console.log(request.body);
+
   const {
     partner_order_id,
     partner_user_id,
@@ -384,17 +386,11 @@ app.post("/api/payment/kakao", async (req, res) => {
     quantity,
     total_amount,
     tax_free_amount,
-  } = req.body;
+  } = request.body;
 
   try {
-    const response = await axios.post(
+    const result = await axios.post(
       "https://open-api.kakaopay.com/online/v1/payment/ready",
-      {
-        headers: {
-          Authorization: `SECRET_KEY ${SECRET_KEY}`,
-          "Content-type": "application/json",
-        },
-      },
       {
         cid: "TC0ONETIME",
         partner_order_id,
@@ -403,57 +399,33 @@ app.post("/api/payment/kakao", async (req, res) => {
         quantity,
         total_amount,
         tax_free_amount,
-        approval_url: `http://localhost:3000/api/payment/approval?dealKey=${partner_order_id}`,
+        approval_url: `http://127.0.0.1:3000/api/payment/approval?dealKey=${partner_order_id}`,
         // fail_url: "http://localhost:3000/fail",
-        fail_url: "http://localhost:3000",
+        fail_url: "http://127.0.0.1:3000",
         // cancel_url: "http://localhost:3000/cancel",
-        cancel_url: "http://localhost:3000",
+        cancel_url: "http://127.0.0.1:3000",
+      },
+      {
+        headers: {
+          Authorization: `SECRET_KEY ${SECRET_KEY}`,
+          "Content-type": "application/json",
+        },
       }
     );
 
-    // const response = await axios({
-    //   url: "https://open-api.kakaopay.com/online/v1/payment/ready",
-    //   method: "POST",
-    //   headers: {
-    //     Authorization: `SECRET_KEY ${SECRET_KEY}`,
-    //     "Content-type": "application/json",
-    //   },
-    //   data: {
-    //     cid: "TC0ONETIME",
-    //     partner_order_id,
-    //     partner_user_id,
-    //     item_name,
-    //     quantity,
-    //     total_amount,
-    //     tax_free_amount,
-    //     approval_url: `http://localhost:3000/api/payment/approval?dealKey=${partner_order_id}`,
-    //     // fail_url: "http://localhost:3000/fail",
-    //     fail_url: "http://localhost:3000",
-    //     // cancel_url: "http://localhost:3000/cancel",
-    //     cancel_url: "http://localhost:3000",
-    //   },
-    // });
+    console.log(result.data.next_redirect_pc_url);
 
-    console.log(approval_url);
-
-    await db.query(
-      "INSERT INTO `order` (user_id, itemKey, dealKey, price, tid, orderStatus) VALUES (?, ?, ?, ?, ?, ?)",
-      [
-        partner_user_id,
-        item_code,
-        partner_order_id,
-        total_amount,
-        response.data.tid,
-        "pending",
-      ]
-    );
-
-    res.json({
-      next_redirect_pc_url: response.data.next_redirect_pc_url,
+    response.json({
+      next_redirect_pc_url: result.data.next_redirect_pc_url,
     });
+
+    // response.send({
+    //   next_redirect_pc_url: response.data.next_redirect_pc_url,
+    // });
   } catch (error) {
-    console.error(error);
-    res.status(500).send("Internal Server Error");
+    console.log("에러발생 : " + error);
+    //console.error(error);
+    // res.status(500).send("Internal Server Error");
   }
 });
 
@@ -478,16 +450,16 @@ app.get("/api/payment/approval", async (req, res) => {
     const response = await axios({
       url: "https://open-api.kakaopay.com/v1/payment/approve",
       method: "POST",
-      headers: {
-        Authorization: `SECRET_KEY ${SECRET_KEY}`,
-        "Content-type": "application/json",
-      },
       data: {
         cid,
         tid,
         partner_order_id,
         partner_user_id,
         pg_token,
+      },
+      headers: {
+        Authorization: `SECRET_KEY ${SECRET_KEY}`,
+        "Content-type": "application/json",
       },
     });
 
