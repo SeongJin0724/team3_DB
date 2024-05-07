@@ -13,7 +13,6 @@ const crypto = require("crypto");
 const secret = crypto.randomBytes(64).toString("hex");
 const jwt = require("jsonwebtoken");
 const multer = require("multer");
-const session = require("express-session");
 
 // var indexRouter = require("./routes/index");
 console.log(secret);
@@ -324,23 +323,17 @@ app.post("/upload-image", upload.single("image"), (req, res) => {
 });
 
 //주문 결제
-app.use(
-  session({
-    secret: "your_secret_key",
-    resave: false,
-    saveUninitialized: true,
-    cookie: { secure: false },
-  })
-);
-
 const SECRET_KEY = "PRD5B1FAF951E00809E83348544DA364D8CB0FDE";
 // const CID = "TC0ONETIME";
 
 app.post("/api/payment/kakao", async (req, res) => {
+  console.log("오고있어");
+
   const {
     partner_order_id,
     partner_user_id,
     item_name,
+    item_code,
     quantity,
     total_amount,
     tax_free_amount,
@@ -362,13 +355,25 @@ app.post("/api/payment/kakao", async (req, res) => {
         quantity,
         total_amount,
         tax_free_amount,
-        approval_url: "http://localhost:3000/api/payment/approval",
+        approval_url: `http://localhost:3000/api/payment/approval?dealKey=${partner_order_id}`,
         fail_url: "http://localhost:3000/fail",
         cancel_url: "http://localhost:3000/cancel",
       },
     });
 
-    req.session.tid = response.data.tid;
+    console.log(approval_url);
+    await db.query(
+      "INSERT INTO `order` (user_id, itemKey, dealKey, totalPrice, tid, orderStatus) VALUES (?, ?, ?, ?, ?, ?)",
+      [
+        partner_user_id,
+        item_code,
+        partner_order_id,
+        total_amount,
+        response.data.tid,
+        "pending",
+      ]
+    );
+
     res.json({
       next_redirect_pc_url: response.data.next_redirect_pc_url,
     });
@@ -379,14 +384,23 @@ app.post("/api/payment/kakao", async (req, res) => {
 });
 
 app.get("/api/payment/approval", async (req, res) => {
-  const { pg_token } = req.query;
-  const tid = req.session.tid;
-  const cid = "TC0ONETIME"; // 카카오페이로부터 발급받은 가맹점 코드
-  const partner_order_id = "YOUR_PARTNER_ORDER_ID"; // 가맹점 주문 번호
-  const partner_user_id = "YOUR_PARTNER_USER_ID"; // 가맹점 회원 ID
+  console.log("결제승인요청");
+  const { pg_token, dealKey } = req.query;
+  const cid = "TC0ONETIME";
+  const partner_order_id = dealKey;
 
   try {
-    // 카카오페이 결제 승인 API 호출
+    const [results] = await db.query(
+      "SELECT orderKey, tid, user_id FROM `order` WHERE dealKey = ?",
+      [partner_order_id]
+    );
+    if (results.length === 0) {
+      throw new Error("No matching order found");
+    }
+    const orderKey = results[0].orderKey;
+    const tid = results[0].tid;
+    const partner_user_id = results[0].user_id;
+
     const response = await axios({
       url: "https://kapi.kakao.com/v1/payment/approve",
       method: "POST",
@@ -394,7 +408,7 @@ app.get("/api/payment/approval", async (req, res) => {
         Authorization: `KakaoAK ${SECRET_KEY}`,
         "Content-type": "application/json",
       },
-      params: {
+      data: {
         cid,
         tid,
         partner_order_id,
@@ -403,11 +417,13 @@ app.get("/api/payment/approval", async (req, res) => {
       },
     });
 
-    // 결제 승인 성공
-    console.log("Payment Approval Success:", response.data);
-    res.json({ success: true, data: response.data });
+    await db.query("UPDATE `order` SET orderStatus = ? WHERE dealKey = ?", [
+      "completed",
+      partner_order_id,
+    ]);
+
+    res.redirect(`/payment-success?orderKey=`);
   } catch (error) {
-    // 결제 승인 실패
     console.error("Payment Approval Error:", error.response.data);
     res
       .status(500)
