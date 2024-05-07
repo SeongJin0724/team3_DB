@@ -348,62 +348,62 @@ const SECRET_KEY = "PRD5B1FAF951E00809E83348544DA364D8CB0FDE";
 
 app.post("/api/payment/kakao", async (req, res) => {
   console.log("오고있어");
+  console.log(req.body);
+  // const {
+  //   partner_order_id,
+  //   partner_user_id,
+  //   item_name,
+  //   item_code,
+  //   quantity,
+  //   total_amount,
+  //   tax_free_amount,
+  // } = req.body;
 
-  const {
-    partner_order_id,
-    partner_user_id,
-    item_name,
-    item_code,
-    quantity,
-    total_amount,
-    tax_free_amount,
-  } = req.body;
+  // try {
+  //   const response = await axios({
+  //     url: "https://open-api.kakaopay.com/online/v1/payment/ready",
+  //     method: "POST",
+  //     headers: {
+  //       Authorization: `SECRET_KEY ${SECRET_KEY}`,
+  //       "Content-type": "application/json",
+  //     },
+  //     data: {
+  //       cid: "TC0ONETIME",
+  //       partner_order_id,
+  //       partner_user_id,
+  //       item_name,
+  //       quantity,
+  //       total_amount,
+  //       tax_free_amount,
+  //       approval_url: `http://localhost:3000/api/payment/approval?dealKey=${partner_order_id}`,
+  //       // fail_url: "http://localhost:3000/fail",
+  //       fail_url: "http://localhost:3000",
+  //       // cancel_url: "http://localhost:3000/cancel",
+  //       cancel_url: "http://localhost:3000",
+  //     },
+  //   });
 
-  try {
-    const response = await axios({
-      url: "https://open-api.kakaopay.com/online/v1/payment/ready",
-      method: "POST",
-      headers: {
-        Authorization: `SECRET_KEY ${SECRET_KEY}`,
-        "Content-type": "application/json",
-      },
-      data: {
-        cid: "TC0ONETIME",
-        partner_order_id,
-        partner_user_id,
-        item_name,
-        quantity,
-        total_amount,
-        tax_free_amount,
-        approval_url: `http://localhost:3000/api/payment/approval?dealKey=${partner_order_id}`,
-        // fail_url: "http://localhost:3000/fail",
-        fail_url: "http://localhost:3000",
-        // cancel_url: "http://localhost:3000/cancel",
-        cancel_url: "http://localhost:3000",
-      },
-    });
+  //   console.log(approval_url);
 
-    console.log(approval_url);
+  //   await db.query(
+  //     "INSERT INTO `order` (user_id, itemKey, dealKey, price, tid, orderStatus) VALUES (?, ?, ?, ?, ?, ?)",
+  //     [
+  //       partner_user_id,
+  //       item_code,
+  //       partner_order_id,
+  //       total_amount,
+  //       response.data.tid,
+  //       "pending",
+  //     ]
+  //   );
 
-    await db.query(
-      "INSERT INTO `order` (user_id, itemKey, dealKey, price, tid, orderStatus) VALUES (?, ?, ?, ?, ?, ?)",
-      [
-        partner_user_id,
-        item_code,
-        partner_order_id,
-        total_amount,
-        response.data.tid,
-        "pending",
-      ]
-    );
-
-    res.json({
-      next_redirect_pc_url: response.data.next_redirect_pc_url,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).send("Internal Server Error");
-  }
+  //   res.json({
+  //     next_redirect_pc_url: response.data.next_redirect_pc_url,
+  //   });
+  // } catch (error) {
+  //   console.error(error);
+  //   res.status(500).send("Internal Server Error");
+  // }
 });
 
 app.get("/api/payment/approval", async (req, res) => {
