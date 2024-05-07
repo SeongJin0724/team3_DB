@@ -371,7 +371,7 @@ app.post("/upload-image", upload.single("image"), (req, res) => {
 
 //주문 결제
 const axios = require("axios");
-const SECRET_KEY = "PRD5B1FAF951E00809E83348544DA364D8CB0FDE";
+const SECRET_KEY = "DEVA4D244E550D373216ADECD766358F6503373E";
 // const CID = "TC0ONETIME";
 
 app.post("/api/payment/kakao", async (req, res) => {
