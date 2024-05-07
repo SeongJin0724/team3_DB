@@ -294,6 +294,26 @@ app.get("/api/reviews", async (req, res) => {
   }
 });
 
+// 주소록
+app.put("/api/mypage/address", async (req, res) => {
+  // 'req.body'에서 'address'와 'user_id' 추출
+  const { address, user_id } = req.body;
+
+  try {
+    // 'user_id'를 이용하여 해당 사용자의 'address' 정보 업데이트
+    const data = await db.query(
+      `UPDATE user SET address = ? WHERE user_id = ?`,
+      [address, user_id] // 쿼리에 'address'와 'user_id' 사용
+    );
+    // 업데이트 성공 메시지 전송
+    res.json({ message: "주소가 성공적으로 업데이트되었습니다.", data });
+  } catch (err) {
+    console.error("Error:", err);
+    // 서버 에러 응답
+    res.status(500).send({ error: "서버 에러" });
+  }
+});
+
 // 스타일 업로드
 // Multer 설정
 const storage = multer.diskStorage({
