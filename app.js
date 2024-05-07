@@ -346,7 +346,7 @@ app.post("/upload-image", upload.single("image"), (req, res) => {
 const SECRET_KEY = "PRD5B1FAF951E00809E83348544DA364D8CB0FDE";
 // const CID = "TC0ONETIME";
 
-app.get("/api/payment/kakao", async (req, res) => {
+app.post("/api/payment/kakao", async (req, res) => {
   console.log("오고있어");
 
   const {
@@ -361,10 +361,10 @@ app.get("/api/payment/kakao", async (req, res) => {
 
   try {
     const response = await axios({
-      url: "https://kapi.kakao.com/v1/payment/ready",
+      url: "https://open-api.kakaopay.com/online/v1/payment/ready",
       method: "POST",
       headers: {
-        Authorization: `KakaoAK ${SECRET_KEY}`,
+        Authorization: `SECRET_KEY ${SECRET_KEY}`,
         "Content-type": "application/json",
       },
       data: {
@@ -376,14 +376,17 @@ app.get("/api/payment/kakao", async (req, res) => {
         total_amount,
         tax_free_amount,
         approval_url: `http://localhost:3000/api/payment/approval?dealKey=${partner_order_id}`,
-        fail_url: "http://localhost:3000/fail",
-        cancel_url: "http://localhost:3000/cancel",
+        // fail_url: "http://localhost:3000/fail",
+        fail_url: "http://localhost:3000",
+        // cancel_url: "http://localhost:3000/cancel",
+        cancel_url: "http://localhost:3000",
       },
     });
 
     console.log(approval_url);
+
     await db.query(
-      "INSERT INTO `order` (user_id, itemKey, dealKey, totalPrice, tid, orderStatus) VALUES (?, ?, ?, ?, ?, ?)",
+      "INSERT INTO `order` (user_id, itemKey, dealKey, price, tid, orderStatus) VALUES (?, ?, ?, ?, ?, ?)",
       [
         partner_user_id,
         item_code,
@@ -422,10 +425,10 @@ app.get("/api/payment/approval", async (req, res) => {
     const partner_user_id = results[0].user_id;
 
     const response = await axios({
-      url: "https://kapi.kakao.com/v1/payment/approve",
+      url: "https://open-api.kakaopay.com/v1/payment/approve",
       method: "POST",
       headers: {
-        Authorization: `KakaoAK ${SECRET_KEY}`,
+        Authorization: `SECRET_KEY ${SECRET_KEY}`,
         "Content-type": "application/json",
       },
       data: {
@@ -442,7 +445,8 @@ app.get("/api/payment/approval", async (req, res) => {
       partner_order_id,
     ]);
 
-    res.redirect(`/payment-success?orderKey=`);
+    console.log(response.data);
+    res.redirect(`/payment-success?orderKey=${orderKey}`);
   } catch (error) {
     console.error("Payment Approval Error:", error.response.data);
     res
