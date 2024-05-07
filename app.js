@@ -378,14 +378,10 @@ app.post("/upload-image", upload.single("image"), (req, res) => {
 });
 
 //주문 결제
-
-///
-
+const axios = require("axios");
 const SECRET_KEY = "DEVA4D244E550D373216ADECD766358F6503373E";
 
-router.post("/api/payment/kakao", async (request, response) => {
-  // console.log(request.body);
-
+app.post("/api/payment/kakao", async (req, res) => {
   const {
     partner_order_id,
     partner_user_id,
@@ -394,10 +390,10 @@ router.post("/api/payment/kakao", async (request, response) => {
     quantity,
     total_amount,
     tax_free_amount,
-  } = request.body;
+  } = req.body;
 
   try {
-    const result = await axios.post(
+    const response = await axios.post(
       "https://open-api.kakaopay.com/online/v1/payment/ready",
       {
         cid: "TC0ONETIME",
@@ -407,11 +403,9 @@ router.post("/api/payment/kakao", async (request, response) => {
         quantity,
         total_amount,
         tax_free_amount,
-        approval_url: `http://127.0.0.1:3000/api/payment/approval?dealKey=${partner_order_id}`,
-        // fail_url: "http://localhost:3000/fail",
-        fail_url: "http://127.0.0.1:3000",
-        // cancel_url: "http://localhost:3000/cancel",
-        cancel_url: "http://127.0.0.1:3000",
+        approval_url: `http://localhost:3000/api/payment/approval?dealKey=${partner_order_id}`,
+        fail_url: "http://localhost:3000",
+        cancel_url: "http://localhost:3000",
       },
       {
         headers: {
@@ -421,19 +415,24 @@ router.post("/api/payment/kakao", async (request, response) => {
       }
     );
 
-    console.log(result.data.next_redirect_pc_url);
+    await db.query(
+      "INSERT INTO `order` (user_id, itemKey, dealKey, price, tid, orderStatus) VALUES (?, ?, ?, ?, ?, ?)",
+      [
+        partner_user_id,
+        item_code,
+        partner_order_id,
+        total_amount,
+        response.data.tid,
+        "pending",
+      ]
+    );
 
-    response.json({
-      next_redirect_pc_url: result.data.next_redirect_pc_url,
+    res.json({
+      next_redirect_pc_url: response.data.next_redirect_pc_url,
     });
-
-    // response.send({
-    //   next_redirect_pc_url: response.data.next_redirect_pc_url,
-    // });
   } catch (error) {
-    console.log("에러발생 : " + error);
-    //console.error(error);
-    // res.status(500).send("Internal Server Error");
+    console.error(error);
+    res.status(500).send("Internal Server Error");
   }
 });
 
@@ -458,16 +457,16 @@ app.get("/api/payment/approval", async (req, res) => {
     const response = await axios({
       url: "https://open-api.kakaopay.com/v1/payment/approve",
       method: "POST",
+      headers: {
+        Authorization: `SECRET_KEY ${SECRET_KEY}`,
+        "Content-type": "application/json",
+      },
       data: {
         cid,
         tid,
         partner_order_id,
         partner_user_id,
         pg_token,
-      },
-      headers: {
-        Authorization: `SECRET_KEY ${SECRET_KEY}`,
-        "Content-type": "application/json",
       },
     });
 
