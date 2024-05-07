@@ -253,39 +253,60 @@ app.put("/api/infochange/:user_id", async (req, res) => {
 
 //유저 정보 업데이트
 app.post("/api/updateUser", (req, res) => {
-  let updatedUserInfo = req.body;
+  const updatedUserInfo = req.body;
 
-  // 비밀번호 해시 처리
-  bcrypt.hash(updatedUserInfo.password, saltRounds, function (err, hash) {
-    if (err) {
-      console.error(err);
-      return res.status(500).send("Internal Server Error");
-    }
-
-    let query = `
-      UPDATE users 
-      SET name = ${db.escape(updatedUserInfo.name)}, 
-          tel = ${db.escape(updatedUserInfo.tel)},
-          address = ${db.escape(updatedUserInfo.address)},
-          email = ${db.escape(updatedUserInfo.email)},
-          password = ${db.escape(hash)} // 해시된 비밀번호 저장
-      WHERE user_id = ${db.escape(updatedUserInfo.user_id)}
-    `;
-
-    db.query(query, (err, result) => {
+  // 비밀번호가 제공되면 해싱 과정을 수행합니다.
+  if (updatedUserInfo.password) {
+    bcrypt.hash(updatedUserInfo.password, saltRounds, function (err, hash) {
       if (err) {
         console.error(err);
-        res.status(500).send("Internal Server Error");
-      } else {
-        if (result.affectedRows == 0) {
-          res.status(404).send("User not found");
-        } else {
-          res.send("User updated successfully");
-        }
+        return res.status(500).send("Internal Server Error");
       }
+
+      // 해싱된 비밀번호로 업데이트합니다.
+      updatedUserInfo.password = hash;
+      updateUserInDatabase(updatedUserInfo, res);
     });
-  });
+  } else {
+    // 비밀번호 업데이트가 필요 없는 경우
+    updateUserInDatabase(updatedUserInfo, res);
+  }
 });
+
+function updateUserInDatabase(userInfo, res) {
+  let queryStart = "UPDATE users SET ";
+  let queryMiddle = "";
+  let queryParams = [];
+
+  Object.keys(userInfo).forEach((key) => {
+    if (key !== "user_id") {
+      // user_id는 업데이트 대상이 아니라 WHERE 조건으로 사용됩니다.
+      queryMiddle += `${key} = ?, `;
+      queryParams.push(userInfo[key]);
+    }
+  });
+
+  // 마지막 쉼표 제거
+  queryMiddle = queryMiddle.slice(0, -2);
+
+  let queryEnd = ` WHERE user_id = ?`;
+  queryParams.push(userInfo.user_id);
+
+  let query = queryStart + queryMiddle + queryEnd;
+
+  db.query(query, queryParams, (err, result) => {
+    if (err) {
+      console.error(err);
+      res.status(500).send("Internal Server Error");
+    } else {
+      if (result.affectedRows == 0) {
+        res.status(404).send("User not found");
+      } else {
+        res.send("User updated successfully");
+      }
+    }
+  });
+}
 // 신규 판매 상품
 app.get("/api/newin", async (req, res) => {
   let limit = 5;
