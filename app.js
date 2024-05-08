@@ -408,6 +408,36 @@ app.post("/upload-image", upload.single("image"), (req, res) => {
   });
 });
 
+//판매·구매 신청
+app.post("/api/offerDeal", async (req, res) => {
+  try {
+    const formData = req.body;
+    const query = `
+      INSERT INTO offerDeal (itemKey, user_id, deal, size, description, price, fee, deadline, totalPrice, sign)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    `;
+    const values = [
+      formData.itemKey,
+      formData.userId,
+      formData.deal,
+      formData.size,
+      formData.desc,
+      formData.price,
+      formData.fee,
+      formData.deadline,
+      formData.totalPrice,
+      formData.sign,
+    ];
+
+    await db.query(query, values);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("데이터베이스 저장 중 에러 발생:", error);
+    res.status(500).json({ success: false, message: "서버 에러" });
+  }
+});
+
 //주문 결제
 const axios = require("axios");
 const SECRET_KEY = "DEVA4D244E550D373216ADECD766358F6503373E";
