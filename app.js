@@ -306,7 +306,7 @@ app.post("/api/updateUserInfo", async (req, res) => {
       }
 
       // 새로운 토큰 생성
-      const newToken = jwt.sign({ user_id: user_id }, "your_secret_key", {
+      const newToken = jwt.sign({ user_id: user_id }, process.env.JWT_SECRET, {
         expiresIn: "1h",
       });
 
