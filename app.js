@@ -263,7 +263,7 @@ app.post("/api/updateUser", (req, res) => {
     }
 
     let query = `
-      UPDATE users 
+      UPDATE user 
       SET name = ${db.escape(updatedUserInfo.name)}, 
           tel = ${db.escape(updatedUserInfo.tel)},
           address = ${db.escape(updatedUserInfo.address)},
