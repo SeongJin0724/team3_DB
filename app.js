@@ -255,62 +255,44 @@ app.put("/api/infochange/:user_id", async (req, res) => {
 
 const jwt = require("jsonwebtoken");
 
-const secretKey = process.env.JWT_SECRET_KEY; // 환경 변수에서 시크릿 키를 가져옵니다.
+// 사용자 정보 업데이트 및 토큰 발급 API
+app.post("/api/updateUserInfo", async (req, res) => {
+  const { user_id, newUserInfo } = req.body;
 
-// 토큰 생성 함수
-const generateToken = (payload) => {
-  return jwt.sign(payload, secretKey, { expiresIn: "1d" }); // 유효 기간 1일로 설정
-};
-
-// 토큰 검증 함수
-const verifyToken = (token) => {
-  return jwt.verify(token, secretKey);
-};
-app.post(
-  "/api/updateUser",
-  asyncHandler(async (req, res) => {
+  // 비밀번호가 업데이트되었는지 확인
+  if (newUserInfo.password) {
     try {
-      const authHeader = req.headers.authorization;
-      if (!authHeader) {
-        return res.status(401).send("토큰이 없습니다.");
-      }
+      // 비밀번호를 해시화
+      const hashedPassword = await bcrypt.hash(newUserInfo.password, 10);
 
-      const token = authHeader.split(" ")[1]; // 요청 헤더에서 토큰 추출
-      const decoded = verifyToken(token); // 토큰 검증
-
-      const { user_id } = decoded;
-      // 사용자 정보 업데이트 로직 (DB 업데이트)
-      // req.body에서 업데이트할 정보를 추출합니다. 예: { name: '새 이름', email: '새 이메일' }
-      const updates = req.body;
-      const updateStatements = Object.entries(updates)
-        .map(([key, value]) => `${key} = '${value}'`)
-        .join(", ");
-      await db.query(`UPDATE user SET ${updateStatements} WHERE user_id = ?`, [
-        user_id,
-      ]);
-
-      // 업데이트된 사용자 정보 가져오기
-      const [updatedRows] = await db.query(
-        `SELECT * FROM user WHERE userId = ?`,
-        [user_id]
-      );
-      const updatedUser = updatedRows[0];
-
-      if (!updatedUser) {
-        return res.status(404).send("사용자를 찾을 수 없습니다.");
-      }
-
-      // 새로운 토큰 생성
-      const newToken = generateToken({ user_id: user_id });
-
-      // 업데이트된 사용자 정보와 새로운 토큰 응답
-      res.json({ user: updatedUser, newToken });
+      // 해시화된 비밀번호로 업데이트
+      newUserInfo.password = hashedPassword;
     } catch (error) {
-      console.error(error);
-      res.status(500).send("서버 에러");
+      return res.status(500).json({ message: "Password hashing failed" });
     }
-  })
-);
+  }
+
+  // 데이터베이스에 사용자 정보를 업데이트하는 쿼리
+  const queryString = "UPDATE user SET ? WHERE user_id = ?";
+
+  // 쿼리 실행
+  db.query(queryString, [newUserInfo, user_id], (error, results, fields) => {
+    if (error) {
+      return res.status(500).json({ message: "Database query failed" });
+    }
+
+    // 새로운 토큰 생성
+    const newToken = jwt.sign({ user_id, ...newUserInfo }, JWT_SECRET, {
+      expiresIn: "1h",
+    });
+
+    // 응답
+    res.json({
+      message: "User information updated successfully.",
+      token: newToken,
+    });
+  });
+});
 // 신규 판매 상품
 app.get("/api/newin", async (req, res) => {
   let limit = 5;
