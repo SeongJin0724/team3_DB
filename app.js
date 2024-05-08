@@ -267,6 +267,16 @@ app.post("/api/updateUserInfo", async (req, res) => {
     // MySQL이 이해할 수 있는 포맷으로 변환
     newUserInfo.dateJoined = date.toISOString().slice(0, 19).replace("T", " ");
   }
+
+  // 'code_expires_at'가 제공되었는지 확인하고, 제공되었다면 포맷을 변환
+  if ("code_expires_at" in newUserInfo && newUserInfo.code_expires_at) {
+    const date = new Date(newUserInfo.code_expires_at);
+    // MySQL이 이해할 수 있는 포맷으로 변환
+    newUserInfo.code_expires_at = date
+      .toISOString()
+      .slice(0, 19)
+      .replace("T", " ");
+  }
   // 비밀번호가 제공되었는지 확인하고, 제공되었다면 해시 처리
   if ("password" in newUserInfo && newUserInfo.password) {
     try {
