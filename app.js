@@ -257,56 +257,44 @@ app.put("/api/infochange/:user_id", async (req, res) => {
 app.post("/api/updateUserInfo", async (req, res) => {
   const { user_id, newUserInfo } = req.body;
 
+  // newUserInfo가 제공되지 않았을 경우의 에러 처리
   if (!newUserInfo) {
     return res.status(400).json({ message: "newUserInfo is undefined" });
   }
 
+  // 비밀번호가 제공되었는지 확인하고, 제공되었다면 해시 처리
   if ("password" in newUserInfo && newUserInfo.password) {
     try {
+      // 비밀번호를 해시화
       const hashedPassword = await bcrypt.hash(newUserInfo.password, 10);
+      // 해시화된 비밀번호로 업데이트
       newUserInfo.password = hashedPassword;
     } catch (error) {
       return res.status(500).json({ message: "Password hashing failed" });
     }
   }
 
+  // 데이터베이스에 'token' 필드가 없으므로, 'newUserInfo' 객체에서 'token' 필드를 제거합니다.
+  delete newUserInfo.token;
+
+  // 데이터베이스에 사용자 정보를 업데이트하는 쿼리
   const queryString = "UPDATE user SET ? WHERE user_id = ?";
 
+  // 쿼리 실행
   db.query(queryString, [newUserInfo, user_id], (error, results, fields) => {
     if (error) {
       return res.status(500).json({ message: "Database query failed" });
     }
 
-    // 새로운 토큰 생성
-    const newToken = jwt.sign({ user_id: user_id }, JWT_SECRET, {
-      expiresIn: "1h",
-    });
-
-    // 업데이트된 사용자 정보를 다시 불러오기 위한 쿼리
-    // 이 부분은 데이터베이스 구조와 쿼리 방식에 따라 달라질 수 있습니다.
-    const selectQuery = "SELECT * FROM user WHERE user_id = ?";
-
-    db.query(selectQuery, [user_id], (error, userResults, fields) => {
-      if (error || userResults.length === 0) {
-        return res
-          .status(500)
-          .json({ message: "Failed to fetch updated user data" });
-      }
-
-      const updatedUserInfo = userResults[0];
-
-      // 비밀번호 필드를 응답에서 제거
-      delete updatedUserInfo.password;
-
-      // 응답
-      res.json({
-        message: "User information updated successfully.",
-        token: newToken,
-        user: updatedUserInfo,
-      });
+    // 새로운 토큰 생성 (이 부분은 클라이언트 측에서 처리될 것입니다)
+    // 응답
+    res.json({
+      message: "User information updated successfully.",
+      // 클라이언트 측에서 필요한 데이터만 전송합니다.
     });
   });
 });
+
 // 신규 판매 상품
 app.get("/api/newin", async (req, res) => {
   let limit = 5;
