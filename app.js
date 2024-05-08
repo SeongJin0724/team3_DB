@@ -393,7 +393,7 @@ app.post("/api/mypage/address", async (req, res) => {
   try {
     // 'user_id'를 이용하여 해당 사용자의 'address' 정보 업데이트
     const data = await db.query(
-      `UPDATE user SET address = ?, zondecode = ?, detailedaddress = ? WHERE user_id = ?`,
+      `UPDATE address SET address = ?, zondecode = ?, detailedaddress = ? WHERE user_id = ?`,
       [zonecode, detailedaddress, address, user_id] // 쿼리에 'address'와 'user_id' 사용
     );
     // 업데이트 성공 메시지 전송
