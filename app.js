@@ -257,12 +257,16 @@ app.put("/api/infochange/:user_id", async (req, res) => {
 app.post("/api/updateUserInfo", async (req, res) => {
   const { user_id, newUserInfo } = req.body;
 
-  // 비밀번호가 업데이트되었는지 확인
-  if (newUserInfo.password) {
+  // newUserInfo가 제공되지 않았을 경우의 에러 처리
+  if (!newUserInfo) {
+    return res.status(400).json({ message: "newUserInfo is undefined" });
+  }
+
+  // 비밀번호가 제공되었는지 확인하고, 제공되었다면 해시 처리
+  if ("password" in newUserInfo && newUserInfo.password) {
     try {
       // 비밀번호를 해시화
       const hashedPassword = await bcrypt.hash(newUserInfo.password, 10);
-
       // 해시화된 비밀번호로 업데이트
       newUserInfo.password = hashedPassword;
     } catch (error) {
