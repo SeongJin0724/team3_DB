@@ -254,6 +254,7 @@ app.put("/api/infochange/:user_id", async (req, res) => {
 //유저 정보 업데이트
 
 // 사용자 정보 업데이트 및 토큰 발급 API
+
 app.post("/api/updateUserInfo", async (req, res) => {
   const { user_id, newUserInfo } = req.body;
 
@@ -261,6 +262,7 @@ app.post("/api/updateUserInfo", async (req, res) => {
   if (!newUserInfo) {
     return res.status(400).json({ message: "newUserInfo is undefined" });
   }
+
   // 'dateJoined'가 제공되었는지 확인하고, 제공되었다면 포맷을 변환
   if ("dateJoined" in newUserInfo && newUserInfo.dateJoined) {
     const date = new Date(newUserInfo.dateJoined);
@@ -277,6 +279,7 @@ app.post("/api/updateUserInfo", async (req, res) => {
       .slice(0, 19)
       .replace("T", " ");
   }
+
   // 비밀번호가 제공되었는지 확인하고, 제공되었다면 해시 처리
   if ("password" in newUserInfo && newUserInfo.password) {
     try {
@@ -294,15 +297,26 @@ app.post("/api/updateUserInfo", async (req, res) => {
 
   const queryString = "UPDATE user SET ? WHERE user_id = ?";
 
-  db.query(queryString, [newUserInfo, user_id], (error, results, fields) => {
-    if (error) {
-      return res.status(500).json({ message: "Database query failed" });
-    }
+  db.query(
+    queryString,
+    [newUserInfo, user_id],
+    async (error, results, fields) => {
+      if (error) {
+        return res.status(500).json({ message: "Database query failed" });
+      }
 
-    res.json({
-      message: "User information updated successfully.",
-    });
-  });
+      // 새로운 토큰 생성
+      const newToken = jwt.sign({ user_id: user_id }, "your_secret_key", {
+        expiresIn: "1h",
+      });
+
+      // 응답에 새로운 토큰 포함
+      res.json({
+        message: "User information updated successfully.",
+        newAccessToken: newToken,
+      });
+    }
+  );
 });
 
 // 신규 판매 상품
