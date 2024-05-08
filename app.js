@@ -252,40 +252,65 @@ app.put("/api/infochange/:user_id", async (req, res) => {
 });
 
 //유저 정보 업데이트
-app.post("/api/updateUser", (req, res) => {
-  let updatedUserInfo = req.body;
 
-  // 비밀번호 해시 처리
-  bcrypt.hash(updatedUserInfo.password, saltRounds, function (err, hash) {
-    if (err) {
-      console.error(err);
-      return res.status(500).send("Internal Server Error");
-    }
+const jwt = require("jsonwebtoken");
 
-    let query = `
-      UPDATE users 
-      SET name = ${db.escape(updatedUserInfo.name)}, 
-          tel = ${db.escape(updatedUserInfo.tel)},
-          address = ${db.escape(updatedUserInfo.address)},
-          email = ${db.escape(updatedUserInfo.email)},
-          password = ${db.escape(hash)} // 해시된 비밀번호 저장
-      WHERE user_id = ${db.escape(updatedUserInfo.user_id)}
-    `;
+const secretKey = process.env.JWT_SECRET_KEY; // 환경 변수에서 시크릿 키를 가져옵니다.
 
-    db.query(query, (err, result) => {
-      if (err) {
-        console.error(err);
-        res.status(500).send("Internal Server Error");
-      } else {
-        if (result.affectedRows == 0) {
-          res.status(404).send("User not found");
-        } else {
-          res.send("User updated successfully");
-        }
+// 토큰 생성 함수
+const generateToken = (payload) => {
+  return jwt.sign(payload, secretKey, { expiresIn: "1d" }); // 유효 기간 1일로 설정
+};
+
+// 토큰 검증 함수
+const verifyToken = (token) => {
+  return jwt.verify(token, secretKey);
+};
+app.post(
+  "/api/updateUser",
+  asyncHandler(async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        return res.status(401).send("토큰이 없습니다.");
       }
-    });
-  });
-});
+
+      const token = authHeader.split(" ")[1]; // 요청 헤더에서 토큰 추출
+      const decoded = verifyToken(token); // 토큰 검증
+
+      const { user_id } = decoded;
+      // 사용자 정보 업데이트 로직 (DB 업데이트)
+      // req.body에서 업데이트할 정보를 추출합니다. 예: { name: '새 이름', email: '새 이메일' }
+      const updates = req.body;
+      const updateStatements = Object.entries(updates)
+        .map(([key, value]) => `${key} = '${value}'`)
+        .join(", ");
+      await db.query(`UPDATE user SET ${updateStatements} WHERE user_id = ?`, [
+        user_id,
+      ]);
+
+      // 업데이트된 사용자 정보 가져오기
+      const [updatedRows] = await db.query(
+        `SELECT * FROM user WHERE userId = ?`,
+        [user_id]
+      );
+      const updatedUser = updatedRows[0];
+
+      if (!updatedUser) {
+        return res.status(404).send("사용자를 찾을 수 없습니다.");
+      }
+
+      // 새로운 토큰 생성
+      const newToken = generateToken({ user_id: user_id });
+
+      // 업데이트된 사용자 정보와 새로운 토큰 응답
+      res.json({ user: updatedUser, newToken });
+    } catch (error) {
+      console.error(error);
+      res.status(500).send("서버 에러");
+    }
+  })
+);
 // 신규 판매 상품
 app.get("/api/newin", async (req, res) => {
   let limit = 5;
@@ -347,36 +372,6 @@ app.post("/api/mypage/address", async (req, res) => {
     console.error("Error:", err);
     // 서버 에러 응답
     res.status(500).send({ error: "서버 에러" });
-  }
-});
-
-app.post("/api/AddressUpdate2", async (req, res) => {
-  const { user_id, address } = req.body; // 요청에서 userId와 address를 추출
-
-  // 입력 데이터 유효성 검사
-  if (!user_id || !address) {
-    return res.status(400).send({ error: "userId and address are required" });
-  }
-
-  try {
-    // 데이터베이스에 연결하여 사용자 정보를 업데이트
-    const query = `
-      UPDATE users SET address = ? WHERE user_id = ?
-    `;
-    const [result] = await pool.query(query, [address, user_id]);
-
-    if (result.affectedRows === 0) {
-      // 업데이트된 행이 없다면, 사용자가 존재하지 않는 것으로 간주
-      return res.status(404).send({ error: "User not found" });
-    }
-
-    // 성공 응답 보내기
-    res
-      .status(200)
-      .send({ success: true, message: "Address updated successfully" });
-  } catch (error) {
-    console.error("Error updating address:", error);
-    res.status(500).send({ error: "Internal server error" });
   }
 });
 
