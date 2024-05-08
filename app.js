@@ -388,13 +388,13 @@ app.get("/api/reviews", async (req, res) => {
 // 주소록
 app.post("/api/mypage/address", async (req, res) => {
   // 'req.body'에서 'address'와 'user_id' 추출
-  const { address, user_id } = req.body;
+  const { zonecode, detailedaddress, address, user_id } = req.body;
 
   try {
     // 'user_id'를 이용하여 해당 사용자의 'address' 정보 업데이트
     const data = await db.query(
-      `UPDATE user SET address = ? WHERE user_id = ?`,
-      [address, user_id] // 쿼리에 'address'와 'user_id' 사용
+      `UPDATE user SET address = ?, zondecode = ?, detailedaddress = ? WHERE user_id = ?`,
+      [zonecode, detailedaddress, address, user_id] // 쿼리에 'address'와 'user_id' 사용
     );
     // 업데이트 성공 메시지 전송
     res.json({ message: "주소가 성공적으로 업데이트되었습니다.", data });
@@ -402,6 +402,29 @@ app.post("/api/mypage/address", async (req, res) => {
     console.error("Error:", err);
     // 서버 에러 응답
     res.status(500).send({ error: "서버 에러" });
+  }
+});
+
+// accout
+let accountInfo = {};
+
+app.post("/api/mypage/account", (req, res) => {
+  const { user_id, bankName, accountNum, accountOwner } = req.body;
+  // 계좌 정보 업데이트
+  (accountInfo[user_id] = bankName), accountNum, accountOwner;
+  res.status(200).send({
+    message: "계좌 정보가 등록되었습니다.",
+    accountInfo: accountInfo[user_id],
+  });
+});
+
+app.get("/api/mypage/account/:userId", (req, res) => {
+  const user_id = req.params.userId;
+  const userInfo = accountInfo[user_id];
+  if (userInfo) {
+    res.status(200).send({ user_id, ...userInfo });
+  } else {
+    res.status(404).send({ message: "계좌 정보를 찾을 수 없습니다." });
   }
 });
 
