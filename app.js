@@ -338,6 +338,28 @@ app.get("/api/items/:itemKey", async (req, res) => {
   }
 });
 
+// 상품 상세페이지 - 판매/구매 거래리스트
+app.get("/api/items/:itemKey/offers", async (req, res) => {
+  try {
+    const salesRows = await db.query(
+      "SELECT * FROM offerDeal WHERE itemKey = ? AND sign = TRUE AND deal = '판매'",
+      [req.params.itemKey]
+    );
+    const purchaseRows = await db.query(
+      "SELECT * FROM offerDeal WHERE itemKey = ? AND sign = TRUE AND deal = '구매'",
+      [req.params.itemKey]
+    );
+    if (salesRows.length > 0 || purchaseRows.length > 0) {
+      res.json({ sales: salesRows[0], purchases: purchaseRows[0] });
+    } else {
+      res.status(404).send("상품을 찾을 수 없습니다.");
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Internal Server Error");
+  }
+});
+
 // 스타일
 app.get("/api/reviews", async (req, res) => {
   try {
