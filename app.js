@@ -350,7 +350,7 @@ app.post("/api/mypage/address", async (req, res) => {
   }
 });
 
-app.post("/api/AddressUpdate", async (req, res) => {
+app.post("/api/AddressUpdate2", async (req, res) => {
   const { user_id, address } = req.body; // 요청에서 userId와 address를 추출
 
   // 입력 데이터 유효성 검사
