@@ -493,7 +493,6 @@ app.post("/api/payment/kakao", async (req, res) => {
 });
 
 app.get("/api/payment/approval", async (req, res) => {
-  console.log("결제승인요청");
   const { pg_token, dealKey } = req.query;
   const cid = "TC0ONETIME";
   const partner_order_id = dealKey;
@@ -510,28 +509,28 @@ app.get("/api/payment/approval", async (req, res) => {
     const tid = results[0].tid;
     const partner_user_id = results[0].user_id;
 
-    const response = await axios({
-      url: "https://open-api.kakaopay.com/v1/payment/approve",
-      method: "POST",
-      headers: {
-        Authorization: `SECRET_KEY ${SECRET_KEY}`,
-        "Content-type": "application/json",
-      },
-      data: {
+    const response = await axios.post(
+      "https://open-api.kakaopay.com/v1/payment/approve",
+      {
         cid,
         tid,
         partner_order_id,
         partner_user_id,
         pg_token,
       },
-    });
+      {
+        headers: {
+          Authorization: `SECRET_KEY ${SECRET_KEY}`,
+          "Content-type": "application/json",
+        },
+      }
+    );
 
     await db.query("UPDATE `order` SET orderStatus = ? WHERE dealKey = ?", [
       "completed",
       partner_order_id,
     ]);
 
-    console.log(response.data);
     res.redirect(`/payment-success?orderKey=${orderKey}`);
   } catch (error) {
     console.error("Payment Approval Error:", error.response.data);
