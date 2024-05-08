@@ -261,7 +261,12 @@ app.post("/api/updateUserInfo", async (req, res) => {
   if (!newUserInfo) {
     return res.status(400).json({ message: "newUserInfo is undefined" });
   }
-
+  // 'dateJoined'가 제공되었는지 확인하고, 제공되었다면 포맷을 변환
+  if ("dateJoined" in newUserInfo && newUserInfo.dateJoined) {
+    const date = new Date(newUserInfo.dateJoined);
+    // MySQL이 이해할 수 있는 포맷으로 변환
+    newUserInfo.dateJoined = date.toISOString().slice(0, 19).replace("T", " ");
+  }
   // 비밀번호가 제공되었는지 확인하고, 제공되었다면 해시 처리
   if ("password" in newUserInfo && newUserInfo.password) {
     try {
@@ -277,20 +282,15 @@ app.post("/api/updateUserInfo", async (req, res) => {
   // 데이터베이스에 'token' 필드가 없으므로, 'newUserInfo' 객체에서 'token' 필드를 제거합니다.
   delete newUserInfo.token;
 
-  // 데이터베이스에 사용자 정보를 업데이트하는 쿼리
   const queryString = "UPDATE user SET ? WHERE user_id = ?";
 
-  // 쿼리 실행
   db.query(queryString, [newUserInfo, user_id], (error, results, fields) => {
     if (error) {
       return res.status(500).json({ message: "Database query failed" });
     }
 
-    // 새로운 토큰 생성 (이 부분은 클라이언트 측에서 처리될 것입니다)
-    // 응답
     res.json({
       message: "User information updated successfully.",
-      // 클라이언트 측에서 필요한 데이터만 전송합니다.
     });
   });
 });
