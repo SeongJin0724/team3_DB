@@ -401,7 +401,34 @@ app.post("/upload-image", upload.single("image"), (req, res) => {
   });
 });
 
-//주문 결제
+//주문
+app.get("/api/offerDeal/:dealKey", async (req, res) => {
+  const dealKey = req.params.dealKey;
+  const offerDeal = "SELECT * FROM offerDeal WHERE dealKey = ?";
+  db.query(offerDeal, [dealKey], (error, offerDealResults) => {
+    if (error) {
+      throw error;
+    }
+    if (offerDealResults.length > 0) {
+      const itemKey = offerDealResults[0].itemKey;
+
+      const item = "SELECT * FROM item WHERE itemKey = ?";
+      db.query(item, [itemKey], (itemError, itemResults) => {
+        if (itemError) {
+          throw itemError;
+        }
+        res.json({
+          offerDeal: offerDealResults[0],
+          item: itemResults[0],
+        });
+      });
+    } else {
+      res.status(404).send("OfferDeal not found");
+    }
+  });
+});
+
+//결제
 const axios = require("axios");
 const SECRET_KEY = "DEVA4D244E550D373216ADECD766358F6503373E";
 
