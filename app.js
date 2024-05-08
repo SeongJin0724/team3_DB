@@ -253,8 +253,6 @@ app.put("/api/infochange/:user_id", async (req, res) => {
 
 //유저 정보 업데이트
 
-const jwt = require("jsonwebtoken");
-
 // 사용자 정보 업데이트 및 토큰 발급 API
 app.post("/api/updateUserInfo", async (req, res) => {
   const { user_id, newUserInfo } = req.body;
