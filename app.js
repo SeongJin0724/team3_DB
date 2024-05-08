@@ -252,73 +252,40 @@ app.put("/api/infochange/:user_id", async (req, res) => {
 });
 
 //유저 정보 업데이트
+app.post("/api/updateUser", (req, res) => {
+  let updatedUserInfo = req.body;
 
-// 사용자 정보 업데이트 및 토큰 발급 API
-
-app.post("/api/updateUserInfo", async (req, res) => {
-  const { user_id, newUserInfo } = req.body;
-
-  // newUserInfo가 제공되지 않았을 경우의 에러 처리
-  if (!newUserInfo) {
-    return res.status(400).json({ message: "newUserInfo is undefined" });
-  }
-
-  // 'dateJoined'가 제공되었는지 확인하고, 제공되었다면 포맷을 변환
-  if ("dateJoined" in newUserInfo && newUserInfo.dateJoined) {
-    const date = new Date(newUserInfo.dateJoined);
-    // MySQL이 이해할 수 있는 포맷으로 변환
-    newUserInfo.dateJoined = date.toISOString().slice(0, 19).replace("T", " ");
-  }
-
-  // 'code_expires_at'가 제공되었는지 확인하고, 제공되었다면 포맷을 변환
-  if ("code_expires_at" in newUserInfo && newUserInfo.code_expires_at) {
-    const date = new Date(newUserInfo.code_expires_at);
-    // MySQL이 이해할 수 있는 포맷으로 변환
-    newUserInfo.code_expires_at = date
-      .toISOString()
-      .slice(0, 19)
-      .replace("T", " ");
-  }
-
-  // 비밀번호가 제공되었는지 확인하고, 제공되었다면 해시 처리
-  if ("password" in newUserInfo && newUserInfo.password) {
-    try {
-      // 비밀번호를 해시화
-      const hashedPassword = await bcrypt.hash(newUserInfo.password, 10);
-      // 해시화된 비밀번호로 업데이트
-      newUserInfo.password = hashedPassword;
-    } catch (error) {
-      return res.status(500).json({ message: "Password hashing failed" });
+  // 비밀번호 해시 처리
+  bcrypt.hash(updatedUserInfo.password, saltRounds, function (err, hash) {
+    if (err) {
+      console.error(err);
+      return res.status(500).send("Internal Server Error");
     }
-  }
 
-  // 데이터베이스에 'token' 필드가 없으므로, 'newUserInfo' 객체에서 'token' 필드를 제거합니다.
-  delete newUserInfo.token;
+    let query = `
+      UPDATE users 
+      SET name = ${db.escape(updatedUserInfo.name)}, 
+          tel = ${db.escape(updatedUserInfo.tel)},
+          address = ${db.escape(updatedUserInfo.address)},
+          email = ${db.escape(updatedUserInfo.email)},
+          password = ${db.escape(hash)} // 해시된 비밀번호 저장
+      WHERE user_id = ${db.escape(updatedUserInfo.user_id)}
+    `;
 
-  const queryString = "UPDATE user SET ? WHERE user_id = ?";
-
-  db.query(
-    queryString,
-    [newUserInfo, user_id],
-    async (error, results, fields) => {
-      if (error) {
-        return res.status(500).json({ message: "Database query failed" });
+    db.query(query, (err, result) => {
+      if (err) {
+        console.error(err);
+        res.status(500).send("Internal Server Error");
+      } else {
+        if (result.affectedRows == 0) {
+          res.status(404).send("User not found");
+        } else {
+          res.send("User updated successfully");
+        }
       }
-
-      // 새로운 토큰 생성
-      const newToken = jwt.sign({ user_id: user_id }, process.env.JWT_SECRET, {
-        expiresIn: "1h",
-      });
-
-      // 응답에 새로운 토큰 포함
-      res.json({
-        message: "User information updated successfully.",
-        newAccessToken: newToken,
-      });
-    }
-  );
+    });
+  });
 });
-
 // 신규 판매 상품
 app.get("/api/newin", async (req, res) => {
   let limit = 5;
@@ -352,28 +319,6 @@ app.get("/api/items/:itemKey", async (req, res) => {
   }
 });
 
-// 상품 상세페이지 - 판매/구매 거래리스트
-app.get("/api/items/:itemKey/offers", async (req, res) => {
-  try {
-    const salesRows = await db.query(
-      "SELECT * FROM offerDeal WHERE itemKey = ? AND sign = TRUE AND deal = '판매'",
-      [req.params.itemKey]
-    );
-    const purchaseRows = await db.query(
-      "SELECT * FROM offerDeal WHERE itemKey = ? AND sign = TRUE AND deal = '구매'",
-      [req.params.itemKey]
-    );
-    if (salesRows.length > 0 || purchaseRows.length > 0) {
-      res.json({ sales: salesRows[0], purchases: purchaseRows[0] });
-    } else {
-      res.status(404).send("상품을 찾을 수 없습니다.");
-    }
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Internal Server Error");
-  }
-});
-
 // 스타일
 app.get("/api/reviews", async (req, res) => {
   try {
@@ -388,13 +333,13 @@ app.get("/api/reviews", async (req, res) => {
 // 주소록
 app.post("/api/mypage/address", async (req, res) => {
   // 'req.body'에서 'address'와 'user_id' 추출
-  const { zonecode, detailedaddress, address, user_id } = req.body;
+  const { address, user_id } = req.body;
 
   try {
     // 'user_id'를 이용하여 해당 사용자의 'address' 정보 업데이트
     const data = await db.query(
-      `UPDATE address SET address = ?, zondecode = ?, detailedaddress = ? WHERE user_id = ?`,
-      [zonecode, detailedaddress, address, user_id] // 쿼리에 'address'와 'user_id' 사용
+      `UPDATE user SET address = ? WHERE user_id = ?`,
+      [address, user_id] // 쿼리에 'address'와 'user_id' 사용
     );
     // 업데이트 성공 메시지 전송
     res.json({ message: "주소가 성공적으로 업데이트되었습니다.", data });
@@ -454,36 +399,6 @@ app.post("/upload-image", upload.single("image"), (req, res) => {
     }
     res.send("Review Uploaded Successfully.");
   });
-});
-
-//판매·구매 신청
-app.post("/api/offerDeal", async (req, res) => {
-  try {
-    const formData = req.body;
-    const query = `
-      INSERT INTO offerDeal (itemKey, user_id, deal, size, description, price, fee, deadline, totalPrice, sign)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
-    `;
-    const values = [
-      formData.itemKey,
-      formData.userId,
-      formData.deal,
-      formData.size,
-      formData.desc,
-      formData.price,
-      formData.fee,
-      formData.deadline,
-      formData.totalPrice,
-      formData.sign,
-    ];
-
-    await db.query(query, values);
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error("데이터베이스 저장 중 에러 발생:", error);
-    res.status(500).json({ success: false, message: "서버 에러" });
-  }
 });
 
 //주문 결제
@@ -546,6 +461,7 @@ app.post("/api/payment/kakao", async (req, res) => {
 });
 
 app.get("/api/payment/approval", async (req, res) => {
+  console.log("결제승인요청");
   const { pg_token, dealKey } = req.query;
   const cid = "TC0ONETIME";
   const partner_order_id = dealKey;
@@ -562,28 +478,28 @@ app.get("/api/payment/approval", async (req, res) => {
     const tid = results[0].tid;
     const partner_user_id = results[0].user_id;
 
-    const response = await axios.post(
-      "https://open-api.kakaopay.com/v1/payment/approve",
-      {
+    const response = await axios({
+      url: "https://open-api.kakaopay.com/v1/payment/approve",
+      method: "POST",
+      headers: {
+        Authorization: `SECRET_KEY ${SECRET_KEY}`,
+        "Content-type": "application/json",
+      },
+      data: {
         cid,
         tid,
         partner_order_id,
         partner_user_id,
         pg_token,
       },
-      {
-        headers: {
-          Authorization: `SECRET_KEY ${SECRET_KEY}`,
-          "Content-type": "application/json",
-        },
-      }
-    );
+    });
 
     await db.query("UPDATE `order` SET orderStatus = ? WHERE dealKey = ?", [
       "completed",
       partner_order_id,
     ]);
 
+    console.log(response.data);
     res.redirect(`/payment-success?orderKey=${orderKey}`);
   } catch (error) {
     console.error("Payment Approval Error:", error.response.data);
