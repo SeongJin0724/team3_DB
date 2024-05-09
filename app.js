@@ -58,7 +58,7 @@ async function authenticateToken(req, res, next) {
   // 요청 헤더에서 토큰 추출
   const authHeader = req.headers.Authorization;
   const token = authHeader && authHeader.split(" ")[1];
-
+  console.log(token);
   if (token == null) {
     return res.sendStatus(401); // 인증되지 않음
   }
