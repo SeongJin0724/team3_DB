@@ -160,29 +160,29 @@ app.post("/api/login", async (req, res) => {
 
   const sql = "SELECT * FROM user WHERE email = ?";
   try {
-    const [users, _] = await db.query(sql, [email]); // 배열 구조 분해를 사용하여 첫 번째 원소(결과)를 가져옴
+    const [users, _] = await db.query(sql, [email]);
 
     if (users.length > 0) {
       const comparison = await bcrypt.compare(password, users[0].password);
       if (comparison) {
-        // JWT 생성
-        const token = jwt.sign(
-          { userId: users[0].id, email: users[0].email },
-          process.env.JWT_SECRET, // JWT 비밀키
-          { expiresIn: "4h" } // 토큰 만료 시간
-        );
+        // JWT 생성 시, 민감한 정보를 제외한 사용자 정보를 포함
+        const { password, verification_code, code_expires_at, ...userInfo } =
+          users[0];
+        const token = jwt.sign({ userData: userInfo }, process.env.JWT_SECRET, {
+          expiresIn: "4h",
+        });
+        // 이렇게 하면 password, verification_code, code_expires_at를 제외한 나머지 사용자 정보가 토큰에 포함됩니다.
+
         res.cookie("token", token, {
           httpOnly: true,
-          sameSite: "strict", // 'none', 'lax', 또는 'strict' 중 선택
-          secure: true, // 로컬 개발 환경에서는 false로 설정할 수 있습니다.
-          maxAge: 4 * 60 * 60 * 1000, // 쿠키 유효 시간 (여기서는 4시간)
+          sameSite: "strict",
+          secure: true,
+          maxAge: 4 * 60 * 60 * 1000,
         });
-        const { password, ...userWithoutPassword } = users[0];
 
         res.send({
           message: "Logged in successfully!",
           token,
-          user: userWithoutPassword, // 클라이언트에게 유저 정보도 함께 보냅니다.
         });
       } else {
         res.status(401).send({ message: "Invalid email or password" });
