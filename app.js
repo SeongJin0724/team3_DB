@@ -208,9 +208,8 @@ app.post("/api/logout", (req, res) => {
 // 유저 조회
 app.get("/api/user", authenticateToken, async (req, res) => {
   try {
-    // 예시로, req.user.id를 사용해 데이터베이스에서 유저 정보를 조회합니다.
-    // 실제 구현에서는 데이터베이스 쿼리 방식에 맞게 코드를 수정해야 합니다.
-    const userId = req.user.user_id;
+    // req.user.userData.user_id를 사용해 데이터베이스에서 유저 정보를 조회합니다.
+    const userId = req.user.userData.user_id;
     const sql = "SELECT * FROM user WHERE user_id = ?";
     const user = await db.query(sql, [userId]);
 
