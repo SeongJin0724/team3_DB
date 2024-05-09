@@ -171,7 +171,7 @@ app.post("/api/login", async (req, res) => {
         // JWT 생성 시, 민감한 정보를 제외한 사용자 정보를 포함
         const { password, verification_code, code_expires_at, ...userInfo } =
           users[0];
-        const token = jwt.sign({ userInfo }, process.env.JWT_SECRET, {
+        const token = jwt.sign({ userData: userInfo }, process.env.JWT_SECRET, {
           expiresIn: "4h",
         });
         // 이렇게 하면 password, verification_code, code_expires_at를 제외한 나머지 사용자 정보가 토큰에 포함됩니다.
@@ -209,12 +209,13 @@ app.post("/api/logout", (req, res) => {
 app.get("/api/user", authenticateToken, async (req, res) => {
   try {
     // req.user.userData.user_id를 사용해 데이터베이스에서 유저 정보를 조회합니다.
-    const userId = req.user.user_id;
+    const userId = req.user.userData.user_id;
     const sql = "SELECT * FROM user WHERE user_id = ?";
-    const user = await db.query(sql, [userId]);
+    const [users] = await db.query(sql, [userId]);
 
-    if (user) {
-      res.json({ user });
+    if (users.length > 0) {
+      const user = users[0]; // 배열의 첫 번째 요소를 user로 지정
+      res.json({ user }); // 이제 user를 { user } 형태로 응답에 포함시킬 수 있습니다.
     } else {
       res.status(404).send({ message: "User not found" });
     }
