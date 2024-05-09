@@ -65,7 +65,7 @@ async function authenticateToken(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = { user_id: decoded.user_id }; // 수정된 부분: 토큰에서 추출한 사용자 ID를 req.user 객체에 추가
+    req = { user_id: decoded.user_id }; // 수정된 부분: 토큰에서 추출한 사용자 ID를 req.user 객체에 추가
     next(); // 다음 미들웨어로 이동
   } catch (err) {
     return res.sendStatus(403); // 유효하지 않은 토큰
@@ -231,12 +231,12 @@ app.get("/api/user", authenticateToken, async (req, res) => {
   try {
     // 예시로, req.user.id를 사용해 데이터베이스에서 유저 정보를 조회합니다.
     // 실제 구현에서는 데이터베이스 쿼리 방식에 맞게 코드를 수정해야 합니다.
-    const userId = req.user.user_id;
+    const userId = req.user_id;
     const sql = "SELECT * FROM user WHERE user_id = ?";
     const user = await db.query(sql, [userId]);
 
     if (user) {
-      res.json({ user });
+      res.json(user);
     } else {
       res.status(404).send({ message: "User not found" });
     }
