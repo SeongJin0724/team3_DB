@@ -419,19 +419,33 @@ app.post("/upload-image", upload.single("image"), (req, res) => {
 //주문
 app.get("/api/offerDeal/:dealKey", async (req, res) => {
   const dealKey = req.params.dealKey;
-  const offerDeal = "SELECT * FROM offerDeal WHERE dealKey = ?";
-  const item = "SELECT * FROM item WHERE itemKey = ?";
+  const query = `
+    SELECT od.*, it.* 
+    FROM offerDeal AS od
+    INNER JOIN item AS it ON od.itemKey = it.itemKey 
+    WHERE od.dealKey = ?
+  `;
+
   try {
-    const dealResponse = await db.query(offerDeal, [dealKey]);
-    if (dealResponse.length === 0) {
-      return res.status(404).send("OfferDeal not found");
+    const response = await db.query(query, [dealKey]);
+    if (response.length === 0) {
+      return res.status(404).send("OfferDeal or Item not found");
     }
-    const itemKey = dealResponse[0].itemKey;
-    const itemResponse = await db.query(item, [itemKey]);
+    const orderData = {
+      dealKey: response[0].dealKey,
+      itemKey: response[0].itemKey,
+      user_id: response[0].user_id,
+      price: response[0].price,
+      fee: response[0].fee,
+      totalPrice: response[0].totalPrice,
+      size: response[0].size,
+      title: response[0].title,
+      brand: response[0].brand,
+      img: response[0].img,
+    };
 
     res.json({
-      offerDeal: dealResponse[0],
-      item: itemResponse[0],
+      orderData: orderData,
     });
   } catch (err) {
     console.error(err);
