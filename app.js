@@ -56,7 +56,7 @@ app.use(express.static(path.join(__dirname, "public")));
 // 사용자 인증 미들웨어 예시
 async function authenticateToken(req, res, next) {
   // 요청 헤더에서 토큰 추출
-  const authHeader = req.headers["authorization"];
+  const authHeader = req.headers["Authorization"];
   const token = authHeader && authHeader.split(" ")[1];
 
   if (token == null) {
@@ -65,7 +65,7 @@ async function authenticateToken(req, res, next) {
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user_id = decoded.user_id; // 토큰에서 추출한 사용자 ID를 요청 객체에 추가
+    req.user = { user_id: decoded.user_id }; // 수정된 부분: 토큰에서 추출한 사용자 ID를 req.user 객체에 추가
     next(); // 다음 미들웨어로 이동
   } catch (err) {
     return res.sendStatus(403); // 유효하지 않은 토큰
