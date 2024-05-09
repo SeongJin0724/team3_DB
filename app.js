@@ -56,7 +56,7 @@ app.use(express.static(path.join(__dirname, "public")));
 // 사용자 인증 미들웨어 예시
 async function authenticateToken(req, res, next) {
   // 요청 헤더에서 토큰 추출
-  const authHeader = req.headers["Authorization"];
+  const authHeader = req.headers.Authorization;
   const token = authHeader && authHeader.split(" ")[1];
 
   if (token == null) {
