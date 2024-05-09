@@ -71,15 +71,30 @@ async function authenticateToken(req, res, next) {
     return res.sendStatus(403); // 유효하지 않은 토큰
   }
 }
-const authHeader = req.headers.Authorization;
-const token = authHeader && authHeader.split(" ")[1];
+function parseJwt(token) {
+  var base64Url = token.split(".")[1];
+  var base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+  var jsonPayload = decodeURIComponent(
+    atob(base64)
+      .split("")
+      .map(function (c) {
+        return "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2);
+      })
+      .join("")
+  );
 
-try {
-  const decoded = jwt.decode(token);
-  console.log(decoded.exp); // exp 값을 출력
-} catch (err) {
-  console.error("토큰 디코딩 중 오류 발생:", err);
+  return JSON.parse(jsonPayload);
 }
+
+// JWT 토큰 예시
+const token =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyRGF0YSI6eyJ1c2VyX2lkIjoyNCwiZW1haWwiOiJ0aGxhNTAxOUBuYXZlci5jb20iLCJuYW1lIjoi7J207ISx7KeEIiwidGVsIjoiMDEwMTIzNDU2Nzg5IiwiYWRkcmVzcyI6Iuqyveq4sCDshLHrgqjsi5wg67aE64u56rWsIOuMgOyZle2MkOq1kOuhnCA0NzcsIDMyMTQsIDEzNDgwIiwiZGF0ZUpvaW5lZCI6IjIwMjQtMDUtMDhUMTM6MjU6MzUuMDAwWiIsImJhbmtOYW1lIjpudWxsLCJhY2NvdW50TnVtIjpudWxsLCJhY2NvdW50T3duZXIiOm51bGwsInZlcmlmaWVkIjowLCJlbWFpbF92ZXJpZmllZCI6MX0sImlhdCI6MTcxNTI0MjgwNywiZXhwIjoxNzE1MjU3MjA3fQ.E97Rt8BvXdUZymtG25-QwJ7RuGnuMZKKUjm7sQT1Wu8";
+
+const decodedToken = parseJwt(token);
+console.log(
+  "토큰의 만료 시간:",
+  new Date(decodedToken.exp * 1000).toLocaleString()
+);
 
 app.post("/send-verification-code", async (req, res) => {
   const { email } = req.body;
