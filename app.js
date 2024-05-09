@@ -53,41 +53,38 @@ app.use(express.static(path.join(__dirname, "public")));
 // app.use("/", indexRouter);
 // app.use('/users', usersRouter);
 
-// 사용자 인증 미들웨어 예시
+const saltRounds = 10;
+
+// 미들웨어: 토큰 인증
 async function authenticateToken(req, res, next) {
-  // 요청 헤더에서 토큰 추출
   const authHeader = req.headers.authorization;
-  const token = authHeader && authHeader.split(" ")[1];
-  console.log(token);
-  if (token == null) {
-    return res.sendStatus(401); // 인증되지 않음
-  }
+  const token = authHeader?.split(" ")[1];
+
+  if (!token) return res.sendStatus(401);
 
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log(decoded);
     req.user = decoded;
-    console.log("req.user", req.user);
-    // 수정된 부분: 토큰에서 추출한 사용자 ID를 req.user 객체에 추가
-    next(); // 다음 미들웨어로 이동
+    next();
   } catch (err) {
-    return res.sendStatus(403); // 유효하지 않은 토큰
+    return res.sendStatus(403);
   }
 }
 
+// 이메일 인증 코드 전송
 app.post("/send-verification-code", async (req, res) => {
   const { email } = req.body;
-  const verificationCode = Math.floor(1000 + Math.random() * 9000); // 4자리 숫자 코드 생성
-  const codeExpires = new Date(new Date().getTime() + 3 * 60 * 1000)
+  const verificationCode = Math.floor(1000 + Math.random() * 9000);
+  const codeExpires = new Date(Date.now() + 3 * 60 * 1000)
     .toISOString()
     .slice(0, 19)
     .replace("T", " ");
+
   await db.query(
     `INSERT INTO user (email, verification_code, code_expires_at) VALUES (?, ?, ?)`,
     [email, verificationCode, codeExpires]
   );
 
-  // 이메일 전송 로직
   await transporter.sendMail({
     from: process.env.EMAIL_USERNAME,
     to: email,
@@ -98,23 +95,19 @@ app.post("/send-verification-code", async (req, res) => {
   res.send("Verification code sent.");
 });
 
-//이메일 코드 검증
+// 이메일 코드 검증
 app.post("/verify-code", async (req, res) => {
   const { email, verificationCode } = req.body;
-  // 현재 시각을 MySQL DATETIME 형식으로 변환
   const now = new Date().toISOString().slice(0, 19).replace("T", " ");
 
-  // 사용자의 이메일과 인증 코드로 검증, 만료되지 않은 코드인지 확인
   const [user] = await db.query(
     `SELECT user_id FROM user WHERE email = ? AND verification_code = ? AND code_expires_at > ?`,
     [email, verificationCode, now]
   );
 
-  if (user.length === 0) {
+  if (user.length === 0)
     return res.status(400).send("Invalid or expired verification code.");
-  }
 
-  // 이메일이 검증된 것으로 표시 (예: 이메일 인증 상태 업데이트)
   await db.query(`UPDATE user SET email_verified = TRUE WHERE user_id = ?`, [
     user[0].user_id,
   ]);
@@ -122,80 +115,49 @@ app.post("/verify-code", async (req, res) => {
   res.send("Email verified successfully.");
 });
 
-const saltRounds = 10; // 비밀번호 해싱에 사용될 salt의 라운드 수
-
+// 회원가입
 app.post("/register", async (req, res) => {
   const { email, password, name, tel, address } = req.body;
 
-  // 먼저 사용자의 이메일로 이메일 인증 여부를 확인합니다.
   const [user] = await db.query(
     `SELECT user_id, email_verified FROM user WHERE email = ?`,
     [email]
   );
-
-  // 사용자가 데이터베이스에 없거나 이메일 인증이 안된 경우
-  if (user.length === 0) {
+  if (user.length === 0 || !user[0].email_verified)
     return res
       .status(404)
       .send("사용자를 찾을 수 없거나 이메일 인증이 필요합니다.");
-  }
-  if (!user[0].email_verified) {
-    return res.status(401).send("이메일 인증이 필요합니다.");
-  }
 
-  const userId = user[0].user_id;
-
-  // 비밀번호를 해싱합니다.
   const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-  // 이메일 인증이 된 경우, 나머지 정보를 업데이트합니다.
   await db.query(
     `UPDATE user SET password = ?, name = ?, tel = ?, address = ? WHERE user_id = ? AND email_verified = 1`,
-    [hashedPassword, name, tel, address, userId]
+    [hashedPassword, name, tel, address, user[0].user_id]
   );
 
   res.send("회원가입이 완료되었습니다.");
 });
 
-//로그인
+// 로그인
 app.post("/api/login", async (req, res) => {
   const { email, password } = req.body;
+  const [users] = await db.query("SELECT * FROM user WHERE email = ?", [email]);
 
-  const sql = "SELECT * FROM user WHERE email = ?";
-  try {
-    const [users, _] = await db.query(sql, [email]);
+  if (users.length > 0 && (await bcrypt.compare(password, users[0].password))) {
+    const { password, verification_code, code_expires_at, ...userInfo } =
+      users[0];
+    const token = jwt.sign({ userData: userInfo }, process.env.JWT_SECRET, {
+      expiresIn: "4h",
+    });
 
-    if (users.length > 0) {
-      const comparison = await bcrypt.compare(password, users[0].password);
-      if (comparison) {
-        // JWT 생성 시, 민감한 정보를 제외한 사용자 정보를 포함
-        const { password, verification_code, code_expires_at, ...userInfo } =
-          users[0];
-        const token = jwt.sign({ userData: userInfo }, process.env.JWT_SECRET, {
-          expiresIn: "4h",
-        });
-        // 이렇게 하면 password, verification_code, code_expires_at를 제외한 나머지 사용자 정보가 토큰에 포함됩니다.
-
-        res.cookie("token", token, {
-          httpOnly: true,
-          sameSite: "strict",
-          secure: true,
-          maxAge: 4 * 60 * 60 * 1000,
-        });
-
-        res.send({
-          message: "Logged in successfully!",
-          token,
-        });
-      } else {
-        res.status(401).send({ message: "Invalid email or password" });
-      }
-    } else {
-      res.status(401).send({ message: "Invalid email or password" });
-    }
-  } catch (err) {
-    console.error(err);
-    res.status(500).send({ message: "An error occurred" });
+    res.cookie("token", token, {
+      httpOnly: true,
+      sameSite: "strict",
+      secure: true,
+      maxAge: 4 * 60 * 60 * 1000,
+    });
+    res.send({ message: "Logged in successfully!", token });
+  } else {
+    res.status(401).send({ message: "Invalid email or password" });
   }
 });
 
@@ -207,24 +169,62 @@ app.post("/api/logout", (req, res) => {
 
 // 유저 조회
 app.get("/api/user", authenticateToken, async (req, res) => {
-  try {
-    // req.user.userData.user_id를 사용해 데이터베이스에서 유저 정보를 조회합니다.
-    const userId = req.user.userData.user_id;
-    const sql = "SELECT * FROM user WHERE user_id = ?";
-    const [users] = await db.query(sql, [userId]);
+  const userId = req.user.userData.user_id;
+  const [users] = await db.query("SELECT * FROM user WHERE user_id = ?", [
+    userId,
+  ]);
 
-    if (users.length > 0) {
-      const user = users[0]; // 배열의 첫 번째 요소를 user로 지정
-      res.json({ user }); // 이제 user를 { user } 형태로 응답에 포함시킬 수 있습니다.
-    } else {
-      res.status(404).send({ message: "User not found" });
-    }
-  } catch (err) {
-    console.error(err);
-    res.status(500).send({ message: "An error occurred" });
+  if (users.length > 0) {
+    res.json({ user: users[0] });
+  } else {
+    res.status(404).send({ message: "User not found" });
   }
 });
+// 유저 업데이트
+app.post("/api/updateUser", authenticateToken, async (req, res) => {
+  // 토큰에서 사용자의 id를 추출합니다.
+  const userId = req.user.userData.user_id;
+  const updatedUserInfo = req.body;
 
+  // 업데이트할 정보를 데이터베이스에 적용합니다.
+  try {
+    // 이 부분은 실제 데이터베이스 구조에 따라 달라질 수 있습니다.
+    // 예를 들어, 여기서는 이름(name), 전화번호(tel), 주소(address)만 업데이트한다고 가정합니다.
+    await db.query(
+      `UPDATE user SET name = ?, tel = ?, address = ? WHERE user_id = ?`,
+      [
+        updatedUserInfo.name,
+        updatedUserInfo.tel,
+        updatedUserInfo.address,
+        userId,
+      ]
+    );
+
+    // 업데이트된 사용자 정보를 다시 조회합니다.
+    const [users] = await db.query("SELECT * FROM user WHERE user_id = ?", [
+      userId,
+    ]);
+
+    if (users.length > 0) {
+      // 새 토큰을 생성합니다. 필요시 여기서 유효 시간을 조정할 수 있습니다.
+      const { password, verification_code, code_expires_at, ...userInfo } =
+        users[0];
+      const newToken = jwt.sign(
+        { userData: userInfo },
+        process.env.JWT_SECRET,
+        { expiresIn: "4h" }
+      );
+
+      // 업데이트된 사용자 정보와 새 토큰을 응답으로 보냅니다.
+      res.json({ user: userInfo, newToken });
+    } else {
+      res.status(404).send({ message: "User not found after update" });
+    }
+  } catch (error) {
+    console.error("Updating user info failed.", error);
+    res.status(500).send({ message: "Internal server error" });
+  }
+});
 // 검색
 app.get("/api/search", async (req, res) => {
   const searchTerm = req.query.term;
