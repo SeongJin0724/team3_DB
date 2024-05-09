@@ -427,27 +427,23 @@ app.post("/upload-image", upload.single("image"), (req, res) => {
 app.get("/api/offerDeal/:dealKey", async (req, res) => {
   const dealKey = req.params.dealKey;
   const offerDeal = "SELECT * FROM offerDeal WHERE dealKey = ?";
-  db.query(offerDeal, [dealKey], (error, offerDealResults) => {
-    if (error) {
-      throw error;
+  const item = "SELECT * FROM item WHERE itemKey = ?";
+  try {
+    const dealResponse = await db.query(offerDeal, [dealKey]);
+    if (dealResponse.length === 0) {
+      return res.status(404).send("OfferDeal not found");
     }
-    if (offerDealResults.length > 0) {
-      const itemKey = offerDealResults[0].itemKey;
+    const itemKey = dealResponse[0].itemKey;
+    const itemResponse = await db.query(item, [itemKey]);
 
-      const item = "SELECT * FROM item WHERE itemKey = ?";
-      db.query(item, [itemKey], (itemError, itemResults) => {
-        if (itemError) {
-          throw itemError;
-        }
-        res.json({
-          offerDeal: offerDealResults[0],
-          item: itemResults[0],
-        });
-      });
-    } else {
-      res.status(404).send("OfferDeal not found");
-    }
-  });
+    res.json({
+      offerDeal: dealResponse[0],
+      item: itemResponse[0],
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Internal Server Error");
+  }
 });
 
 //결제
