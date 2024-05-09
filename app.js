@@ -53,6 +53,25 @@ app.use(express.static(path.join(__dirname, "public")));
 // app.use("/", indexRouter);
 // app.use('/users', usersRouter);
 
+// 사용자 인증 미들웨어 예시
+async function authenticateToken(req, res, next) {
+  // 요청 헤더에서 토큰 추출
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
+
+  if (token == null) {
+    return res.sendStatus(401); // 인증되지 않음
+  }
+
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user_id = decoded.user_id; // 토큰에서 추출한 사용자 ID를 요청 객체에 추가
+    next(); // 다음 미들웨어로 이동
+  } catch (err) {
+    return res.sendStatus(403); // 유효하지 않은 토큰
+  }
+}
+
 app.post("/send-verification-code", async (req, res) => {
   const { email } = req.body;
   const verificationCode = Math.floor(1000 + Math.random() * 9000); // 4자리 숫자 코드 생성
@@ -184,12 +203,21 @@ app.post("/api/logout", (req, res) => {
 });
 
 // 유저 조회
-app.get("/api/users", async (req, res) => {
+app.get("/api/user", authenticateToken, async (req, res) => {
   try {
-    const [data, fields] = await db.query("SELECT * FROM user");
-    res.send(data);
+    // 예시로, req.user.id를 사용해 데이터베이스에서 유저 정보를 조회합니다.
+    // 실제 구현에서는 데이터베이스 쿼리 방식에 맞게 코드를 수정해야 합니다.
+    const userId = req.user.user_id;
+    const sql = "SELECT * FROM user WHERE user_id = ?";
+    const user = await db.query(sql, [userId]);
+
+    if (user) {
+      res.json({ user });
+    } else {
+      res.status(404).send({ message: "User not found" });
+    }
   } catch (err) {
-    console.log(err);
+    console.error(err);
     res.status(500).send({ message: "An error occurred" });
   }
 });
@@ -251,41 +279,6 @@ app.put("/api/infochange/:user_id", async (req, res) => {
   });
 });
 
-//유저 정보 업데이트
-app.post("/api/updateUser", (req, res) => {
-  let updatedUserInfo = req.body;
-
-  // 비밀번호 해시 처리
-  bcrypt.hash(updatedUserInfo.password, saltRounds, function (err, hash) {
-    if (err) {
-      console.error(err);
-      return res.status(500).send("Internal Server Error");
-    }
-
-    let query = `
-      UPDATE user 
-      SET name = ${db.escape(updatedUserInfo.name)}, 
-          tel = ${db.escape(updatedUserInfo.tel)},
-          address = ${db.escape(updatedUserInfo.address)},
-          email = ${db.escape(updatedUserInfo.email)},
-          password = ${db.escape(hash)} // 해시된 비밀번호 저장
-      WHERE user_id = ${db.escape(updatedUserInfo.user_id)}
-    `;
-
-    db.query(query, (err, result) => {
-      if (err) {
-        console.error(err);
-        res.status(500).send("Internal Server Error");
-      } else {
-        if (result.affectedRows == 0) {
-          res.status(404).send("User not found");
-        } else {
-          res.send("User updated successfully");
-        }
-      }
-    });
-  });
-});
 // 신규 판매 상품
 app.get("/api/newin", async (req, res) => {
   let limit = 5;
