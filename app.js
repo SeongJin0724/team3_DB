@@ -418,35 +418,21 @@ app.post("/upload-image", upload.single("image"), (req, res) => {
 
 //주문
 app.get("/api/offerDeal/:dealKey", async (req, res) => {
-  const dealKey = req.params.dealKey;
-  const query = `
-    SELECT od.*, it.* 
-    FROM offerDeal AS od
-    INNER JOIN item AS it ON od.itemKey = it.itemKey 
-    WHERE od.dealKey = ?
-  `;
-
   try {
+    const dealKey = req.params.dealKey;
+    const query = `
+      SELECT od.dealKey, od.itemKey, od.user_id, od.price, od.fee, 
+      od.totalPrice, od.size, it.title, it.brand, it.img 
+      FROM offerDeal AS od
+      INNER JOIN item AS it ON od.itemKey = it.itemKey 
+      WHERE od.dealKey = ?
+    `;
     const response = await db.query(query, [dealKey]);
     if (response.length === 0) {
       return res.status(404).send("OfferDeal or Item not found");
     }
-    const orderData = {
-      dealKey: response[0].dealKey,
-      itemKey: response[0].itemKey,
-      user_id: response[0].user_id,
-      price: response[0].price,
-      fee: response[0].fee,
-      totalPrice: response[0].totalPrice,
-      size: response[0].size,
-      title: response[0].title,
-      brand: response[0].brand,
-      img: response[0].img,
-    };
 
-    res.json({
-      orderData: orderData,
-    });
+    res.json(response[0]);
   } catch (err) {
     console.error(err);
     res.status(500).send("Internal Server Error");
