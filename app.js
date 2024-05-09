@@ -71,6 +71,15 @@ async function authenticateToken(req, res, next) {
     return res.sendStatus(403); // 유효하지 않은 토큰
   }
 }
+const authHeader = req.headers.Authorization;
+const token = authHeader && authHeader.split(" ")[1];
+
+try {
+  const decoded = jwt.decode(token);
+  console.log(decoded.exp); // exp 값을 출력
+} catch (err) {
+  console.error("토큰 디코딩 중 오류 발생:", err);
+}
 
 app.post("/send-verification-code", async (req, res) => {
   const { email } = req.body;
