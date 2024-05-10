@@ -543,7 +543,7 @@ app.get("/api/payment/approval", async (req, res) => {
   const { dealKey, pg_token } = req.query;
   const cid = "TC0ONETIME";
   const partner_order_id = dealKey;
-  console.log(pg_token);
+  console.log(pg_token, dealKey);
   try {
     const results = await db.query(
       "SELECT orderKey, tid, user_id FROM `order` WHERE dealKey = ?",
@@ -572,7 +572,7 @@ app.get("/api/payment/approval", async (req, res) => {
         },
       }
     );
-    console.log(response);
+
     await db.query("UPDATE `order` SET orderStatus = ? WHERE dealKey = ?", [
       "completed",
       partner_order_id,
