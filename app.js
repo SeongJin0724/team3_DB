@@ -438,7 +438,20 @@ app.get("/api/offerDeal/:dealKey", async (req, res) => {
     res.json(response[0]);
   } catch (err) {
     console.error(err);
-    res.status(500).send("Internal Server Error");
+    res.status(500).json({ message: "서버 에러 발생" });
+  }
+});
+
+//주문 - 판매
+app.post("/api/sendOrdersell", async (req, res) => {
+  try {
+    const { user_id, itemKey, dealKey, price } = req.body;
+    const query =
+      "INSERT INTO `order` (user_id, itemKey, dealKey, price) VALUES (?, ?, ?, ?)";
+    await db.query(query, [user_id, itemKey, dealKey, price]);
+    res.json({ message: "판매완료" });
+  } catch (err) {
+    res.status(500).json({ message: "서버 에러 발생" });
   }
 });
 
@@ -451,7 +464,7 @@ app.post("/api/payment/kakao", async (req, res) => {
     partner_order_id,
     partner_user_id,
     item_name,
-    // item_code,
+    item_code,
     quantity,
     total_amount,
     tax_free_amount,
@@ -480,35 +493,34 @@ app.post("/api/payment/kakao", async (req, res) => {
       }
     );
 
-    // await db.query(
-    //   "INSERT INTO `order` (user_id, itemKey, dealKey, price, tid, orderStatus) VALUES (?, ?, ?, ?, ?, ?)",
-    //   [
-    //     parseInt(partner_user_id),
-    //     parseInt(item_code),
-    //     parseInt(partner_order_id),
-    //     parseInt(total_amount),
-    //     response.data.tid,
-    //     "pending",
-    //   ]
-    // );
+    await db.query(
+      "INSERT INTO `order` (user_id, itemKey, dealKey, price, tid, orderStatus) VALUES (?, ?, ?, ?, ?, ?)",
+      [
+        parseInt(partner_user_id),
+        parseInt(item_code),
+        parseInt(partner_order_id),
+        parseInt(total_amount),
+        response.data.tid,
+        "pending",
+      ]
+    );
 
     res.json({
       next_redirect_pc_url: response.data.next_redirect_pc_url,
     });
   } catch (error) {
     console.error(error);
-    res.status(500).send("Internal Server Error");
+    res.status(500).json({ message: "서버 에러 발생" });
   }
 });
 
 app.get("/api/payment/approval", async (req, res) => {
-  console.log("결제승인요청");
   const { pg_token, dealKey } = req.query;
   const cid = "TC0ONETIME";
   const partner_order_id = dealKey;
 
   try {
-    const [results] = await db.query(
+    const results = await db.query(
       "SELECT orderKey, tid, user_id FROM `order` WHERE dealKey = ?",
       [partner_order_id]
     );
@@ -539,8 +551,6 @@ app.get("/api/payment/approval", async (req, res) => {
       "completed",
       partner_order_id,
     ]);
-
-    console.log(response.data);
     res.redirect(`/payment-success?orderKey=${orderKey}`);
   } catch (error) {
     console.error("Payment Approval Error:", error.response.data);
