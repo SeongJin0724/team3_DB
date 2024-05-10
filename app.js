@@ -557,7 +557,12 @@ app.get("/api/payment/approval", async (req, res) => {
     const orderKey = results[0].orderKey;
     const tid = results[0].tid;
     const partner_user_id = results[0].user_id;
+
+    console.log("orderKey", orderKey);
+    console.log("tid", tid);
     console.log("partner_user_id", partner_user_id);
+    console.log("partner_order_id", partner_order_id);
+
     const response = await axios.post(
       "https://open-api.kakaopay.com/v1/payment/approve",
       {
