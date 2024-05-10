@@ -279,7 +279,7 @@ app.put("/api/infochange", async (req, res) => {
   try {
     const data = await db.query(
       `UPDATE user SET email = ?, password = ?, tel = ? WHERE user_id = ?`,
-      [email, tel, hashedPassword, user_id]
+      [email, hashedPassword, tel, user_id]
     );
     res.json({ message: "회원정보가 수정되었습니다.", data });
   } catch (err) {
