@@ -368,13 +368,13 @@ app.post("/api/mypage/address", async (req, res) => {
   }
 });
 
-// accout
+// account
 let accountInfo = {};
 
 app.post("/api/mypage/account", (req, res) => {
   const { user_id, bankName, accountNum, accountOwner } = req.body;
   // 계좌 정보 업데이트
-  (accountInfo[user_id] = bankName), accountNum, accountOwner;
+  accountInfo[user_id] = { bankName, accountNum, accountOwner };
   res.status(200).send({
     message: "계좌 정보가 등록되었습니다.",
     accountInfo: accountInfo[user_id],
