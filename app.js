@@ -196,6 +196,10 @@ app.post("/api/updateUser", authenticateToken, async (req, res) => {
         updatedUserInfo.name,
         updatedUserInfo.tel,
         updatedUserInfo.address,
+        updatedUserInfo.bankName,
+        updatedUserInfo.accountNum,
+        updatedUserInfo.accountOwner,
+        updatedUserInfo.email,
         userId,
       ]
     );
