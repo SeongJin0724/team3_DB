@@ -539,7 +539,7 @@ app.post("/api/payment/kakao", async (req, res) => {
 });
 
 //결제 승인
-app.get("/api/payment/approval", async (req, res) => {
+app.post("/api/payment/approval", async (req, res) => {
   const { dealKey, pg_token } = req.query;
   const cid = "TC0ONETIME";
   const partner_order_id = dealKey;
