@@ -553,10 +553,12 @@ app.get("/api/payment/approval", async (req, res) => {
       throw new Error("No matching order found");
     }
     console.log("results", results);
-    console.log("results", results[0].user_id);
-    const orderKey = results[0].orderKey;
-    const tid = results[0].tid;
-    const partner_user_id = results[0].user_id;
+    console.log("results", results.orderKey);
+    console.log("results", results.tid);
+    console.log("results", results.user_id);
+    const orderKey = results.orderKey;
+    const tid = results.tid;
+    const partner_user_id = results.user_id;
     console.log("partner_user_id", partner_user_id);
     const response = await axios.post(
       "https://open-api.kakaopay.com/v1/payment/approve",
