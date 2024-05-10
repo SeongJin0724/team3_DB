@@ -188,18 +188,17 @@ app.post("/api/updateUser", authenticateToken, async (req, res) => {
 
   // 업데이트할 정보를 데이터베이스에 적용합니다.
   try {
-    // 이 부분은 실제 데이터베이스 구조에 따라 달라질 수 있습니다.
-    // 예를 들어, 여기서는 이름(name), 전화번호(tel), 주소(address)만 업데이트한다고 가정합니다.
     await db.query(
       `UPDATE user SET name = ?, tel = ?, address = ? WHERE user_id = ?`,
       [
+        updatedUserInfo.email,
         updatedUserInfo.name,
+        updatedUserInfo.password,
         updatedUserInfo.tel,
         updatedUserInfo.address,
         updatedUserInfo.bankName,
         updatedUserInfo.accountNum,
         updatedUserInfo.accountOwner,
-        updatedUserInfo.email,
         userId,
       ]
     );
