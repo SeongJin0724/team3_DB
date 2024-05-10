@@ -348,6 +348,29 @@ app.get("/api/reviews", async (req, res) => {
   }
 });
 
+// 포스트
+app.get("/api/styleItem/:reviewKey", async (req, res) => {
+  try {
+    const { reviewKey } = req.params;
+    const [data] = await db.query(
+      `SELECT r.*, i.* 
+      FROM reviews r
+      JOIN item i ON r.itemKey = i.itemKey 
+      WHERE r.reviewKey = ?`,
+      [reviewKey]
+    );
+
+    if (data.length > 0) {
+      res.json(data[0]);
+    } else {
+      res.status(404).send("Item not found");
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: "서버 에러" });
+  }
+});
+
 // 주소록
 app.post("/api/mypage/address", async (req, res) => {
   // 'req.body'에서 'address'와 'user_id' 추출
