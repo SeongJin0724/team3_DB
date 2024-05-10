@@ -391,26 +391,21 @@ app.post("/api/mypage/address", async (req, res) => {
   }
 });
 
-// account
-let accountInfo = {};
+// 계좌 정보 업데이트
 
-app.post("/api/mypage/account", (req, res) => {
+app.post("/api/mypage/account", async (req, res) => {
   const { user_id, bankName, accountNum, accountOwner } = req.body;
-  // 계좌 정보 업데이트
-  accountInfo[user_id] = { bankName, accountNum, accountOwner };
-  res.status(200).send({
-    message: "계좌 정보가 등록되었습니다.",
-    accountInfo: accountInfo[user_id],
-  });
-});
 
-app.get("/api/mypage/account/:userId", (req, res) => {
-  const user_id = req.params.userId;
-  const userInfo = accountInfo[user_id];
-  if (userInfo) {
-    res.status(200).send({ user_id, ...userInfo });
-  } else {
-    res.status(404).send({ message: "계좌 정보를 찾을 수 없습니다." });
+  try {
+    const data = await db.query(
+      `UPDATE user SET bankName = ?, accountNum = ?, accountOwner = ? WHERE user_id = ?`,
+      [bankName, accountNum, accountOwner, user_id] // 파라미터 순서 수정
+    );
+    res.json({ message: "계좌 변경이 완료되었습니다.", data });
+  } catch (err) {
+    console.error("Error:", err);
+    // 서버 에러 응답
+    res.status(500).send({ error: "서버 에러" });
   }
 });
 
