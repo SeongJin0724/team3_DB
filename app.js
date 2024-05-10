@@ -543,7 +543,7 @@ app.get("/api/payment/approval", async (req, res) => {
   const { dealKey, pg_token } = req.query;
   const cid = "TC0ONETIME";
   const partner_order_id = dealKey;
-
+  console.log(pg_token);
   try {
     const results = await db.query(
       "SELECT orderKey, tid, user_id FROM `order` WHERE dealKey = ?",
@@ -555,7 +555,7 @@ app.get("/api/payment/approval", async (req, res) => {
     const orderKey = results[0].orderKey;
     const tid = results[0].tid;
     const partner_user_id = results[0].user_id;
-
+    console.log(partner_user_id);
     const response = await axios.post(
       "https://open-api.kakaopay.com/v1/payment/approve",
       {
