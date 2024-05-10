@@ -539,7 +539,7 @@ app.post("/api/payment/kakao", async (req, res) => {
 });
 
 //결제 승인
-app.post("/api/payment/approval", async (req, res) => {
+app.get("/api/payment/approval", async (req, res) => {
   const { dealKey, pg_token } = req.query;
   const cid = "TC0ONETIME";
   const partner_order_id = dealKey;
@@ -572,7 +572,7 @@ app.post("/api/payment/approval", async (req, res) => {
         },
       }
     );
-
+    console.log(response);
     await db.query("UPDATE `order` SET orderStatus = ? WHERE dealKey = ?", [
       "completed",
       partner_order_id,
