@@ -274,16 +274,19 @@ app.get("/api/brands/:brand", async (req, res) => {
 });
 
 // 로그인정보
-app.put("/api/infochange/:user_id", async (req, res) => {
-  const { email, password, tel } = req.body;
-  const { user_id } = req.params;
+app.put("/api/infochange", async (req, res) => {
+  const { email, password, tel, user_id } = req.body;
   const hashedPassword = await bcrypt.hash(password, saltRounds);
-  const sqlUpdate =
-    "UPDATE user SET email = ?, password = ?, tel = ? WHERE user_id = ?";
-  db.query(sqlUpdate, [email, hashedPassword, tel, user_id], (err, result) => {
-    if (err) throw err;
-    res.send(result);
-  });
+  try {
+    const data = await db.query(
+      `UPDATE user SET email = ?, password = ?, tel = ? WHERE user_id = ?`,
+      [email, tel, hashedPassword, user_id]
+    );
+    res.json({ message: "회원정보가 수정되었습니다.", data });
+  } catch (err) {
+    console.error("Error", err);
+    res.status(500).send({ error: "서버에러" });
+  }
 });
 
 // 신규 판매 상품
