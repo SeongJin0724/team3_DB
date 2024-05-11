@@ -570,8 +570,8 @@ app.post("/api/payment/kakao", async (req, res) => {
 });
 
 //결제 승인
-app.get("/api/payment/approval", async (req, res) => {
-  const { dealKey, pg_token } = req.query;
+app.post("/api/payment/approval", async (req, res) => {
+  const { dealKey, pg_token } = req.body;
   const cid = "TC0ONETIME";
   const partner_order_id = dealKey;
   console.log(pg_token, dealKey);
@@ -616,7 +616,8 @@ app.get("/api/payment/approval", async (req, res) => {
       partner_order_id,
     ]);
 
-    res.redirect(`/payment-success?orderKey=${orderKey}`);
+    console.log("response", response);
+    res.redirect(`http://127.0.0.1:3000/payment-success?orderKey=${orderKey}`);
   } catch (error) {
     console.error("Payment Approval Error:", error.response.data);
     res
