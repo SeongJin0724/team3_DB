@@ -180,6 +180,7 @@ app.get("/api/user", authenticateToken, async (req, res) => {
     res.status(404).send({ message: "User not found" });
   }
 });
+
 // 유저 업데이트
 app.post("/api/updateUser", authenticateToken, async (req, res) => {
   // 토큰에서 사용자의 id를 추출합니다.
@@ -228,6 +229,7 @@ app.post("/api/updateUser", authenticateToken, async (req, res) => {
     res.status(500).send({ message: "Internal server error" });
   }
 });
+
 // 검색
 app.get("/api/search", async (req, res) => {
   const searchTerm = req.query.term;
@@ -343,6 +345,36 @@ app.get("/api/items/:itemKey/offers", async (req, res) => {
   }
 });
 
+//판매·구매 신청
+app.post("/api/applyOfferDeal", async (req, res) => {
+  try {
+    const formData = req.body;
+    const query = `
+      INSERT INTO offerDeal (itemKey, user_id, deal, size, description, price, fee, deadline, totalPrice, sign)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+    `;
+    const values = [
+      formData.itemKey,
+      formData.userId,
+      formData.deal,
+      formData.size,
+      formData.desc,
+      formData.price,
+      formData.fee,
+      formData.deadline,
+      formData.totalPrice,
+      formData.sign,
+    ];
+
+    await db.query(query, values);
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("데이터베이스 저장 중 에러 발생:", error);
+    res.status(500).json({ success: false, message: "서버 에러" });
+  }
+});
+
 // 스타일
 app.get("/api/reviews", async (req, res) => {
   try {
@@ -398,7 +430,6 @@ app.post("/api/mypage/address", async (req, res) => {
 });
 
 // 계좌 정보 업데이트
-
 app.post("/api/mypage/account", async (req, res) => {
   const { user_id, bankName, accountNum, accountOwner } = req.body;
 
@@ -443,7 +474,7 @@ app.post("/upload-image", upload.single("image"), (req, res) => {
   });
 });
 
-//주문
+//주문 - 구매하기 CLICK -> 데이터 가져오기
 app.get("/api/offerDeal/:dealKey", async (req, res) => {
   try {
     const dealKey = req.params.dealKey;
@@ -466,7 +497,7 @@ app.get("/api/offerDeal/:dealKey", async (req, res) => {
   }
 });
 
-//주문 - 판매
+//주문 - 판매하기
 app.post("/api/sendOrdersell", async (req, res) => {
   try {
     const { user_id, itemKey, dealKey, price } = req.body;
@@ -544,9 +575,10 @@ app.get("/api/payment/approval", async (req, res) => {
   const cid = "TC0ONETIME";
   const partner_order_id = dealKey;
   console.log(pg_token, dealKey);
+
   try {
     const results = await db.query(
-      "SELECT orderKey, tid, user_id FROM `order` WHERE dealKey = ?",
+      "SELECT orderKey, user_id, tid FROM `order` WHERE dealKey = ?",
       [partner_order_id]
     );
     if (results.length === 0) {
@@ -555,13 +587,14 @@ app.get("/api/payment/approval", async (req, res) => {
     console.log("results", results);
 
     const orderKey = results[0].orderKey;
-    const tid = results[0].tid;
+    const orderKeyRow = results.rows[0].orderKey;
     const partner_user_id = results[0].user_id;
+    const tid = results[0].tid;
 
     console.log("orderKey", orderKey);
-    console.log("tid", tid);
+    console.log("orderKeyRow", orderKeyRow);
     console.log("partner_user_id", partner_user_id);
-    console.log("partner_order_id", partner_order_id);
+    console.log("tid", tid);
 
     const response = await axios.post(
       "https://open-api.kakaopay.com/v1/payment/approve",
