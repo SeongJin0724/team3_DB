@@ -510,7 +510,7 @@ app.post("/api/sendOrdersell", async (req, res) => {
   }
 });
 
-//결제
+//결제 요청
 const axios = require("axios");
 const SECRET_KEY = "DEVA4D244E550D373216ADECD766358F6503373E";
 
@@ -570,8 +570,8 @@ app.post("/api/payment/kakao", async (req, res) => {
 });
 
 //결제 승인
-app.post("/api/payment/approval", async (req, res) => {
-  const { dealKey, pg_token } = req.body;
+app.get("/api/payment/approval", async (req, res) => {
+  const { dealKey, pg_token } = req.query;
   const cid = "TC0ONETIME";
   const partner_order_id = dealKey;
 
@@ -609,13 +609,17 @@ app.post("/api/payment/approval", async (req, res) => {
       }
     );
 
+    console.log("response", response);
+
     await db.query("UPDATE `order` SET orderStatus = ? WHERE dealKey = ?", [
       "completed",
       parseInt(partner_order_id),
     ]);
 
-    console.log("response", response);
-    res.redirect(`http://127.0.0.1:3000/payment-success?orderKey=${orderKey}`);
+    //redirect하지 말고 res.json으로 데이터 보낸후 클라이언트에서 redirect하기
+    // res.redirect(`http://127.0.0.1:3000/payment-success?orderKey=${orderKey}`);
+
+    res.json(response.data);
   } catch (error) {
     console.error("Payment Approval Error:", error.response.data);
     res
