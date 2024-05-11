@@ -586,13 +586,11 @@ app.get("/api/payment/approval", async (req, res) => {
     }
     console.log("results", results);
 
-    const orderKey = results[0].orderKey;
-    const orderKeyRow = results.rows[0].orderKey;
-    const partner_user_id = results[0].user_id;
-    const tid = results[0].tid;
+    const orderKey = results[0][0].orderKey;
+    const partner_user_id = results[0][0].user_id;
+    const tid = results[0][0].tid;
 
     console.log("orderKey", orderKey);
-    console.log("orderKeyRow", orderKeyRow);
     console.log("partner_user_id", partner_user_id);
     console.log("tid", tid);
 
