@@ -573,12 +573,12 @@ app.post("/api/payment/kakao", async (req, res) => {
 app.post("/api/payment/approval", async (req, res) => {
   const { dealKey, pg_token } = req.body;
   const cid = "TC0ONETIME";
-  const data_dealKey = dealKey;
+  const partner_order_id = dealKey;
 
   try {
     const results = await db.query(
       "SELECT orderKey, user_id, tid FROM `order` WHERE dealKey = ?",
-      [data_dealKey]
+      [parseInt(partner_order_id)]
     );
     if (results.length === 0) {
       throw new Error("No matching order found");
@@ -587,7 +587,9 @@ app.post("/api/payment/approval", async (req, res) => {
     const orderKey = results[0][0].orderKey.toString();
     const partner_user_id = results[0][0].user_id.toString();
     const tid = results[0][0].tid.toString();
-    const partner_order_id = dealKey.toString();
+    console.log("orderKey", typeof orderKey, orderKey);
+    console.log("partner_user_id", typeof partner_user_id, partner_user_id);
+    console.log("tid", typeof tid, tid);
 
     const response = await axios.post(
       "https://open-api.kakaopay.com/v1/payment/approve",
