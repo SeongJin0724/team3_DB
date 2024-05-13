@@ -375,6 +375,48 @@ app.post("/api/applyOfferDeal", async (req, res) => {
   }
 });
 
+//SHOP
+function getCategoryValue(category) {
+  switch (category) {
+    case "top":
+      return "상의";
+    case "outer":
+      return "아우터";
+    case "bottom":
+      return "하의";
+    case "sneakers":
+      return "스니커즈";
+    case "shoes":
+      return "신발";
+    case "headwear":
+      return "모자";
+    case "bag":
+      return "가방";
+    default:
+      return "";
+  }
+}
+
+app.get("/api/filter", async (req, res) => {
+  try {
+    const { category } = req.query;
+    let query = "SELECT * FROM items";
+    let values = [];
+
+    if (category !== "all") {
+      query += " WHERE category = ? OR subCategory = ?";
+      const categoryValue = getCategoryValue(category); // 카테고리에 따른 값을 반환하는 함수
+      values = [categoryValue, categoryValue];
+    }
+
+    const [result] = await db.query(query, values);
+    res.json(result);
+  } catch (err) {
+    console.error(err);
+    res.status(400).send(err.message);
+  }
+});
+
 // 스타일
 app.get("/api/reviews", async (req, res) => {
   try {
