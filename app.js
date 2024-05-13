@@ -400,12 +400,12 @@ function getCategoryValue(category) {
 app.get("/api/filter", async (req, res) => {
   try {
     const { category } = req.query;
-    let query = "SELECT * FROM items";
+    let query = "SELECT * FROM item";
     let values = [];
 
     if (category !== "all") {
       query += " WHERE category = ? OR subCategory = ?";
-      const categoryValue = getCategoryValue(category); // 카테고리에 따른 값을 반환하는 함수
+      const categoryValue = getCategoryValue(category);
       values = [categoryValue, categoryValue];
     }
 
