@@ -635,7 +635,7 @@ app.get("/api/payment/approval", async (req, res) => {
     console.log("tid", typeof tid, tid);
 
     const response = await axios.post(
-      "https://open-api.kakaopay.com/v1/payment/approve",
+      "https://open-api.kakaopay.com/online/v1/payment/approve",
       {
         cid,
         tid,
@@ -658,10 +658,9 @@ app.get("/api/payment/approval", async (req, res) => {
       parseInt(partner_order_id),
     ]);
 
+    res.json(response.data);
     //redirect하지 말고 res.json으로 데이터 보낸후 클라이언트에서 redirect하기
     // res.redirect(`http://127.0.0.1:3000/payment-success?orderKey=${orderKey}`);
-
-    res.json(response.data);
   } catch (error) {
     console.error("Payment Approval Error:", error.response.data);
     res
