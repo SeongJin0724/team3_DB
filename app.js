@@ -451,6 +451,31 @@ app.get("/api/styleItem/:reviewKey", async (req, res) => {
   }
 });
 
+// 마이페이지- 구매/판매 내역
+app.post("/api/offerDealDetail", async (req, res) => {
+  try {
+    const { user_id, deal } = req.body;
+    const query = "SELECT * FROM `offerDeal` WHERE user_id = ? AND deal = ?";
+    const data = await db.query(query, [user_id, deal]);
+    res.json(data[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: "서버 에러" });
+  }
+});
+
+app.post("/api/orderDetail", async (req, res) => {
+  try {
+    const { user_id, deal } = req.body;
+    const query = "SELECT * FROM `order` WHERE user_id = ? AND deal = ?";
+    const data = await db.query(query, [user_id, deal]);
+    res.json(data[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send({ error: "서버 에러" });
+  }
+});
+
 // 주소록
 app.post("/api/mypage/address", async (req, res) => {
   // 'req.body'에서 'address'와 'user_id' 추출
@@ -591,11 +616,12 @@ app.post("/api/payment/kakao", async (req, res) => {
     );
 
     await db.query(
-      "INSERT INTO `order` (user_id, itemKey, dealKey, price, tid, orderStatus) VALUES (?, ?, ?, ?, ?, ?)",
+      "INSERT INTO `order` (user_id, itemKey, dealKey, deal, price, tid, orderStatus) VALUES (?, ?, ?, ?, ?, ?, ?)",
       [
         parseInt(partner_user_id),
         parseInt(item_code),
         parseInt(partner_order_id),
+        "buy",
         parseInt(total_amount),
         response.data.tid,
         "pending",
