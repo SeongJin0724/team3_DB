@@ -789,6 +789,20 @@ app.post("/api/delete/wishlist", async (req, res) => {
 //위시리스트 조회
 app.get("/api/get/wishlist", authenticateToken, async (req, res) => {
   const userId = req.user.userData.user_id;
+  try {
+    const data = await db.query("SELECT * FROM wishlist WHERE user_id = ?", [
+      userId,
+    ]);
+    res.status(200).json(data);
+  } catch (error) {
+    console.error(error, "error");
+    res.status(500).send({ error: "서버에러" });
+  }
+});
+
+//위시리스트 상세조회
+app.get("/api/get/wishlistDetail", authenticateToken, async (req, res) => {
+  const userId = req.user.userData.user_id;
   const itemKey = req.query.itemKey;
 
   if (!userId || !itemKey) {
