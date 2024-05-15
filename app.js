@@ -697,6 +697,27 @@ app.get("/api/payment/approval", async (req, res) => {
   }
 });
 
+// 위시리스트
+app.post("/api/post/wishlist", async (req, res) => {
+  const { user_id, itemKey } = req.body;
+
+  try {
+    const data = await db.query(
+      "INSERT INTO wishlist (user_id, itemKey) VALUES (?, ?)",
+      [user_id, itemKey]
+    );
+    res
+      .status(200)
+      .json({ success: true, message: "Wishlist item added successfully." });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while adding the wishlist item.",
+    });
+  }
+});
+
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));
