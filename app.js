@@ -754,7 +754,7 @@ app.post("/api/delete/wishlist", async (req, res) => {
       [user_id, itemKey, wishKey]
     );
 
-    if (data.affectedRows >= 0) {
+    if (data.affectedRows > 0) {
       res.status(200).json({
         success: true,
         message: "Wishlist item deleted successfully.",
