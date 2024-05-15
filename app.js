@@ -721,32 +721,32 @@ app.post("/api/post/wishlist", async (req, res) => {
 //위시리스트 조회
 app.get("/api/get/wishlist", authenticateToken, async (req, res) => {
   const userId = req.user.userData.user_id;
+  const itemKey = req.query.itemKey;
 
-  if (!userId) {
+  if (!userId || !itemKey) {
     return res
       .status(400)
-      .json({ success: false, message: "Invalid user ID." });
+      .json({ success: false, message: "Invalid user ID or item key." });
   }
 
   try {
-    const [wishlists] = await db.query(
-      "SELECT * FROM wishlist WHERE user_id = ?",
-      [userId]
+    const [wishlist] = await db.query(
+      "SELECT * FROM wishlist WHERE user_id = ? AND itemKey = ?",
+      [userId, itemKey]
     );
 
-    if (wishlists.length === 0) {
+    if (!wishlist) {
       return res
         .status(404)
-        .json({ success: false, message: "Wishlist not found." });
+        .json({ success: false, message: "Wishlist item not found." });
     }
 
-    res.status(200).json({ success: true, data: wishlists });
+    res.status(200).json({ success: true, data: wishlist });
   } catch (error) {
     console.error(error);
-
     res.status(500).json({
       success: false,
-      message: "An error occurred while retrieving the wishlist.",
+      message: "An error occurred while retrieving the wishlist item.",
     });
   }
 });
