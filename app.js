@@ -697,7 +697,7 @@ app.get("/api/payment/approval", async (req, res) => {
   }
 });
 
-// 위시리스트
+// 위시리스트 등록
 app.post("/api/post/wishlist", async (req, res) => {
   const { user_id, itemKey } = req.body;
 
@@ -714,6 +714,36 @@ app.post("/api/post/wishlist", async (req, res) => {
     res.status(500).json({
       success: false,
       message: "An error occurred while adding the wishlist item.",
+    });
+  }
+});
+
+// 위시리스트 삭제
+app.delete("/api/delete/wishlist", async (req, res) => {
+  const { user_id, itemKey, wishKey } = req.body;
+
+  try {
+    const data = await db.query(
+      "DELETE FROM wishlist WHERE user_id = ? AND itemKey = ? AND wishKey = ?",
+      [user_id, itemKey, wishKey]
+    );
+
+    if (data.affectedRows > 0) {
+      res.status(200).json({
+        success: true,
+        message: "Wishlist item deleted successfully.",
+      });
+    } else {
+      // 일치하는 데이터가 없으면, 클라이언트에게 해당 정보를 알립니다.
+      res
+        .status(404)
+        .json({ success: false, message: "No matching wishlist item found." });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while deleting the wishlist item.",
     });
   }
 });
