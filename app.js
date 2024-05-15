@@ -477,6 +477,24 @@ app.post("/api/orderDetail", async (req, res) => {
   }
 });
 
+// 마이페이지- 구매/판매 신청 취소(승인대기일 경우만)
+app.delete("/api/deleteOfferDeal/:dealKey", async (req, res) => {
+  const { dealKey } = req.params;
+  try {
+    const query = "DELETE FROM offerDeal WHERE dealKey = ?";
+    const result = await db.query(query, [dealKey]);
+    if (result.affectedRows === 0) {
+      return res
+        .status(404)
+        .json("해당 dealKey를 가진 항목을 찾을 수 없습니다.");
+    }
+    res.json("삭제완료");
+  } catch (error) {
+    console.error("삭제 중 에러 발생:", error);
+    res.status(500).json("서버 에러로 인한 삭제 실패");
+  }
+});
+
 // 주소록
 app.post("/api/mypage/address", async (req, res) => {
   // 'req.body'에서 'address'와 'user_id' 추출
@@ -568,10 +586,18 @@ app.get("/api/offerDeal/:dealKey", async (req, res) => {
 //주문 - 판매하기
 app.post("/api/sendOrdersell", async (req, res) => {
   try {
-    const { user_id, itemKey, dealKey, price } = req.body;
+    const { user_id, itemKey, dealKey, deal, itemTitle, price } = req.body;
     const query =
-      "INSERT INTO `order` (user_id, itemKey, dealKey, price) VALUES (?, ?, ?, ?)";
-    await db.query(query, [user_id, itemKey, dealKey, price]);
+      "INSERT INTO `order` (user_id, itemKey, dealKey, deal, itemTitle, price, orderStatus) VALUES (?, ?, ?, ?, ?, ?, ?)";
+    await db.query(query, [
+      user_id,
+      itemKey,
+      dealKey,
+      deal,
+      itemTitle,
+      price,
+      "completed",
+    ]);
     res.json({ message: "판매완료" });
   } catch (err) {
     res.status(500).json({ message: "서버 에러 발생" });
