@@ -728,17 +728,16 @@ app.post("/api/delete/wishlist", async (req, res) => {
       [user_id, itemKey, wishKey]
     );
 
-    if (data.affectedRows > 0) {
-      res.status(200).json({
-        success: true,
-        message: "Wishlist item deleted successfully.",
-      });
-    } else {
-      // 일치하는 데이터가 없으면, 클라이언트에게 해당 정보를 알립니다.
-      res
-        .status(404)
-        .json({ success: false, message: "No matching wishlist item found." });
-    }
+    // if (data.affectedRows > 0) {
+    //   res.status(200).json({
+    //     success: true,
+    //     message: "Wishlist item deleted successfully.",
+    //   });
+    // } else {
+    //   res
+    //     .status(404)
+    //     .json({ success: false, message: "No matching wishlist item found." });
+    // }
   } catch (error) {
     console.error(error);
     res.status(500).json({
