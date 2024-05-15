@@ -290,6 +290,17 @@ app.put("/api/infochange", async (req, res) => {
   }
 });
 
+//상품 조회
+app.get("/api/items", async (req, res) => {
+  try {
+    const data = await db.query("SELECT * FROM item");
+    res.status(200).json(data);
+  } catch (error) {
+    console.error(error, "error");
+    res.status(500).send({ error: "서버 에러" });
+  }
+});
+
 // 신규 판매 상품
 app.get("/api/newin", async (req, res) => {
   let limit = 5;
