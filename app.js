@@ -294,7 +294,7 @@ app.put("/api/infochange", async (req, res) => {
 app.get("/api/items", async (req, res) => {
   try {
     const data = await db.query("SELECT * FROM item");
-    res.json(data);
+    res.status(200).json(data);
   } catch (error) {
     console.error(error, "error");
     res.status(500).send({ error: "서버 에러" });
