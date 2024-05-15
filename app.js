@@ -718,6 +718,52 @@ app.post("/api/post/wishlist", async (req, res) => {
   }
 });
 
+//위시리스트 조회
+app.get("/api/get/wishlist", authenticateToken, async (req, res) => {
+  const userId = req.user.userData.user_id;
+
+  if (!userId) {
+    return res
+      .status(400)
+      .json({ success: false, message: "Invalid user ID." });
+  }
+
+  try {
+    const [wishlists] = await db.query(
+      "SELECT * FROM wishlist WHERE user_id = ?",
+      [userId]
+    );
+
+    if (wishlists.length === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Wishlist not found." });
+    }
+
+    res.status(200).json({ success: true, data: wishlists });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: "An error occurred while retrieving the wishlist.",
+    });
+  }
+});
+
+app.get("/api/user", authenticateToken, async (req, res) => {
+  const userId = req.user.userData.user_id;
+  const [users] = await db.query("SELECT * FROM user WHERE user_id = ?", [
+    userId,
+  ]);
+
+  if (users.length > 0) {
+    res.json({ user: users[0] });
+  } else {
+    res.status(404).send({ message: "User not found" });
+  }
+});
+
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
   next(createError(404));
