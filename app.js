@@ -350,12 +350,13 @@ app.post("/api/applyOfferDeal", async (req, res) => {
   try {
     const formData = req.body;
     const query = `
-      INSERT INTO offerDeal (itemKey, user_id, deal, size, description, price, fee, deadline, totalPrice, sign)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+      INSERT INTO offerDeal (itemKey, user_id, itemTitle, deal, size, description, price, fee, deadline, totalPrice, sign)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
     `;
     const values = [
       formData.itemKey,
       formData.userId,
+      formData.itemTitle,
       formData.deal,
       formData.size,
       formData.desc,
@@ -616,12 +617,13 @@ app.post("/api/payment/kakao", async (req, res) => {
     );
 
     await db.query(
-      "INSERT INTO `order` (user_id, itemKey, dealKey, deal, price, tid, orderStatus) VALUES (?, ?, ?, ?, ?, ?, ?)",
+      "INSERT INTO `order` (user_id, itemKey, dealKey, deal, itemTitle, price, tid, orderStatus) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       [
         parseInt(partner_user_id),
         parseInt(item_code),
         parseInt(partner_order_id),
-        "buy",
+        "구매",
+        item_name,
         parseInt(total_amount),
         response.data.tid,
         "pending",
