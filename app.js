@@ -728,22 +728,10 @@ app.post("/api/post/wishlist", async (req, res) => {
   const { user_id, itemKey } = req.body;
 
   try {
-    const existingItem = await db.query(
-      "SELECT * FROM wishlist WHERE user_id = ? AND itemKey = ?",
+    const data = await db.query(
+      "INSERT INTO wishlist (user_id, itemKey) VALUES (?, ?)",
       [user_id, itemKey]
     );
-
-    if (existingItem.length > 0) {
-      return res.status(200).json({
-        success: false,
-        message: "Wishlist item already exists.",
-      });
-    }
-
-    await db.query("INSERT INTO wishlist (user_id, itemKey) VALUES (?, ?)", [
-      user_id,
-      itemKey,
-    ]);
     res
       .status(200)
       .json({ success: true, message: "Wishlist item added successfully." });
