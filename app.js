@@ -728,10 +728,22 @@ app.post("/api/post/wishlist", async (req, res) => {
   const { user_id, itemKey } = req.body;
 
   try {
-    const data = await db.query(
-      "INSERT INTO wishlist (user_id, itemKey) VALUES (?, ?)",
+    const existingItem = await db.query(
+      "SELECT * FROM wishlist WHERE user_id = ? AND itemKey = ?",
       [user_id, itemKey]
     );
+
+    if (existingItem.length > 0) {
+      return res.status(200).json({
+        success: false,
+        message: "Wishlist item already exists.",
+      });
+    }
+
+    await db.query("INSERT INTO wishlist (user_id, itemKey) VALUES (?, ?)", [
+      user_id,
+      itemKey,
+    ]);
     res
       .status(200)
       .json({ success: true, message: "Wishlist item added successfully." });
@@ -749,21 +761,21 @@ app.post("/api/delete/wishlist", async (req, res) => {
   const { user_id, itemKey, wishKey } = req.body;
 
   try {
-    const data = await db.query(
+    const result = await db.query(
       "DELETE FROM wishlist WHERE user_id = ? AND itemKey = ? AND wishKey = ?",
       [user_id, itemKey, wishKey]
     );
 
-    if (data.affectedRows > 0) {
+    if (result.affectedRows > 0) {
       res.status(200).json({
         success: true,
         message: "Wishlist item deleted successfully.",
       });
     } else {
-      // 일치하는 데이터가 없으면, 클라이언트에게 해당 정보를 알립니다.
-      res
-        .status(404)
-        .json({ success: false, message: "No matching wishlist item found." });
+      res.status(200).json({
+        success: true,
+        message: "No matching wishlist item found, or it was already deleted.",
+      });
     }
   } catch (error) {
     console.error(error);
