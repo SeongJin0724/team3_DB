@@ -719,7 +719,7 @@ app.post("/api/post/wishlist", async (req, res) => {
 });
 
 // 위시리스트 삭제
-app.delete("/api/delete/wishlist", async (req, res) => {
+app.post("/api/delete/wishlist", async (req, res) => {
   const { user_id, itemKey, wishKey } = req.body;
 
   try {
