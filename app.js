@@ -599,18 +599,20 @@ const upload = multer({ storage: storage });
 
 app.use("/uploads", express.static("uploads"));
 
-app.post("/upload-image", upload.single("image"), (req, res) => {
+app.post("/upload-image", upload.single("img"), async (req, res) => {
   const imagePath = req.file.path;
-  const reviewContent = req.body.review;
-  const query = "INSERT INTO reviews (content, img) VALUES (?, ?)";
+  const { user_id, itemKey, content } = req.body;
+  console.log("imagePath", imagePath);
+  const query =
+    "INSERT INTO reviews  (user_id, item_key, content, img) VALUES (?, ?, ?, ?)";
 
-  db.query(query, [reviewContent, imagePath], (err, results) => {
-    if (err) {
-      console.error("An error occurred:", err);
-      return res.status(500).send("An error occurred.");
-    }
-    res.send("Review Uploaded Successfully.");
-  });
+  try {
+    await db.query(query, [user_id, itemKey, content, imagePath]);
+    res.json("스타일 업로드");
+  } catch (err) {
+    console.error("An error occurred:", err);
+    res.status(500).json("An error occurred.");
+  }
 });
 
 //주문 - 구매하기 CLICK -> 데이터 가져오기
