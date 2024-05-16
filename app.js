@@ -531,6 +531,23 @@ app.post("/api/reviews", async (req, res) => {
   }
 });
 
+app.delete("/api/deleteReview/:reviewKey", async (req, res) => {
+  const { reviewKey } = req.params;
+  try {
+    const query = "DELETE FROM reviews WHERE reviewKey = ?";
+    const result = await db.query(query, [reviewKey]);
+    if (result.affectedRows === 0) {
+      return res
+        .status(404)
+        .json("해당 dealKey를 가진 항목을 찾을 수 없습니다.");
+    }
+    res.json("삭제완료");
+  } catch (error) {
+    console.error("삭제 중 에러 발생:", error);
+    res.status(500).json("서버 에러로 인한 삭제 실패");
+  }
+});
+
 // 주소록
 app.post("/api/mypage/address", async (req, res) => {
   // 'req.body'에서 'address'와 'user_id' 추출
