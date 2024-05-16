@@ -506,6 +506,31 @@ app.delete("/api/deleteOfferDeal/:dealKey", async (req, res) => {
   }
 });
 
+// 마이페이지 - 내 스타일
+app.post("/api/posts", async (req, res) => {
+  const { user_id } = req.body;
+  try {
+    const query = "SELECT * FROM review WHERE user_id = ?";
+    const data = await db.query(query, [user_id]);
+    res.json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
+app.post("/api/reviews", async (req, res) => {
+  const { user_id, review } = req.body;
+  try {
+    const query = "SELECT * FROM `order` WHERE user_id = ? AND review = ?";
+    const data = await db.query(query, [user_id, review]);
+    res.json(data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal Server Error" });
+  }
+});
+
 // 주소록
 app.post("/api/mypage/address", async (req, res) => {
   // 'req.body'에서 'address'와 'user_id' 추출
