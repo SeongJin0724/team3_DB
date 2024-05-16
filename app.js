@@ -510,9 +510,9 @@ app.delete("/api/deleteOfferDeal/:dealKey", async (req, res) => {
 app.post("/api/posts", async (req, res) => {
   const { user_id } = req.body;
   try {
-    const query = "SELECT * FROM review WHERE user_id = ?";
+    const query = "SELECT * FROM reviews WHERE user_id = ?";
     const data = await db.query(query, [user_id]);
-    res.json(data);
+    res.json(data[0]);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Internal Server Error" });
@@ -524,7 +524,7 @@ app.post("/api/reviews", async (req, res) => {
   try {
     const query = "SELECT * FROM `order` WHERE user_id = ? AND review = ?";
     const data = await db.query(query, [user_id, review]);
-    res.json(data);
+    res.json(data[0]);
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Internal Server Error" });
