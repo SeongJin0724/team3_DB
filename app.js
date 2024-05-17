@@ -394,7 +394,7 @@ app.post("/api/adminSign", async (req, res) => {
 });
 
 // 거래 삭제
-app.post("/api/adminSign", async (req, res) => {
+app.post("/api/delete/adminSign", async (req, res) => {
   try {
     const { dealKey } = req.body;
     const data = await db.query(`DELETE FROM offerDeal WHERE dealKey = ?`, [
