@@ -393,6 +393,25 @@ app.post("/api/adminSign", async (req, res) => {
   }
 });
 
+// 거래 삭제
+app.post("/api/adminSign", async (req, res) => {
+  try {
+    const { dealKey } = req.body;
+    const data = await db.query(`DELETE FROM offerDeal WHERE dealKey = ?`, [
+      dealKey,
+    ]);
+    if (data.affectedRows === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "해당하는 거래가 없습니다." });
+    }
+    res.json({ message: "삭제 완료.", data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("서버 에러");
+  }
+});
+
 //판매·구매 신청
 app.post("/api/applyOfferDeal", async (req, res) => {
   try {
