@@ -356,6 +356,43 @@ app.get("/api/items/:itemKey/offers", async (req, res) => {
   }
 });
 
+// 관리자 페이지
+app.get("/api/admin", async (req, res) => {
+  try {
+    const data = await db.query("SELECT * FROM offerDeal WHERE sign = false");
+    if (data.length > 0) {
+      res.json(data[0]);
+    } else {
+      res
+        .status(200)
+        .json({ success: false, message: "구매/판매 신청이 없습니다." });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("서버 에러");
+  }
+});
+
+// 승인
+app.post("/api/adminSign", async (req, res) => {
+  try {
+    const { dealKey } = req.body;
+    const data = await db.query(
+      `UPDATE offerDeal SET sign = TRUE WHERE dealKey = ?`,
+      [dealKey]
+    );
+    if (data.affectedRows === 0) {
+      return res
+        .status(404)
+        .json({ success: false, message: "해당하는 거래가 없습니다." });
+    }
+    res.json({ message: "승인완료.", data });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("서버 에러");
+  }
+});
+
 //판매·구매 신청
 app.post("/api/applyOfferDeal", async (req, res) => {
   try {
