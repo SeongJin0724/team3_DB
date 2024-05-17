@@ -338,11 +338,11 @@ app.get("/api/items/:itemKey", async (req, res) => {
 app.get("/api/items/:itemKey/offers", async (req, res) => {
   try {
     const salesRows = await db.query(
-      "SELECT * FROM offerDeal WHERE itemKey = ? AND sign = TRUE AND deal = '판매'",
+      "SELECT * FROM offerDeal WHERE itemKey = ? AND sign = TRUE AND deal = '판매' AND dealState = FALSE",
       [req.params.itemKey]
     );
     const purchaseRows = await db.query(
-      "SELECT * FROM offerDeal WHERE itemKey = ? AND sign = TRUE AND deal = '구매'",
+      "SELECT * FROM offerDeal WHERE itemKey = ? AND sign = TRUE AND deal = '구매' AND dealState = FALSE",
       [req.params.itemKey]
     );
     if (salesRows.length > 0 || purchaseRows.length > 0) {
@@ -467,7 +467,8 @@ app.get("/api/styleItem/:reviewKey", async (req, res) => {
 app.post("/api/offerDealDetail", async (req, res) => {
   try {
     const { user_id, deal } = req.body;
-    const query = "SELECT * FROM `offerDeal` WHERE user_id = ? AND deal = ?";
+    const query =
+      "SELECT * FROM `offerDeal` WHERE user_id = ? AND deal = ?  AND dealState = FALSE";
     const data = await db.query(query, [user_id, deal]);
     res.json(data[0]);
   } catch (err) {
@@ -585,7 +586,7 @@ app.post("/api/mypage/account", async (req, res) => {
   }
 });
 
-// 스타일 업로드
+// 스타일 업로드 ---> order테이블 review 컬럼 true로 update
 // Multer 설정
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
@@ -644,7 +645,7 @@ app.post("/api/sendOrdersell", async (req, res) => {
     const { user_id, itemKey, dealKey, deal, itemTitle, price } = req.body;
     const query =
       "INSERT INTO `order` (user_id, itemKey, dealKey, deal, itemTitle, price, orderStatus) VALUES (?, ?, ?, ?, ?, ?, ?)";
-    await db.query(query, [
+    const insertResult = await db.query(query, [
       user_id,
       itemKey,
       dealKey,
@@ -653,7 +654,15 @@ app.post("/api/sendOrdersell", async (req, res) => {
       price,
       "completed",
     ]);
-    res.json({ message: "판매완료" });
+    if (insertResult) {
+      const updateQuery =
+        "UPDATE offerDeal SET dealState = TRUE WHERE dealKey = ?";
+      await db.query(updateQuery, [dealKey]);
+
+      res.json({ message: "판매완료" });
+    } else {
+      res.status(500).json({ message: "주문 생성 실패" });
+    }
   } catch (err) {
     res.status(500).json({ message: "서버 에러 발생" });
   }
@@ -697,7 +706,7 @@ app.post("/api/payment/kakao", async (req, res) => {
       }
     );
 
-    await db.query(
+    const insertResult = await db.query(
       "INSERT INTO `order` (user_id, itemKey, dealKey, deal, itemTitle, price, tid, orderStatus) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
       [
         parseInt(partner_user_id),
@@ -710,6 +719,13 @@ app.post("/api/payment/kakao", async (req, res) => {
         "pending",
       ]
     );
+
+    if (insertResult) {
+      await db.query(
+        "UPDATE offerDeal SET dealState = TRUE WHERE dealKey = ?",
+        [parseInt(partner_order_id)]
+      );
+    }
 
     res.json({
       next_redirect_pc_url: response.data.next_redirect_pc_url,
@@ -768,8 +784,6 @@ app.get("/api/payment/approval", async (req, res) => {
     ]);
 
     res.json(response.data);
-    //redirect하지 말고 res.json으로 데이터 보낸후 클라이언트에서 redirect하기
-    // res.redirect(`http://127.0.0.1:3000/payment-success?orderKey=${orderKey}`);
   } catch (error) {
     console.error("Payment Approval Error:", error.response.data);
     res
